@@ -1,0 +1,2519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TransferOps dashboard</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --bg-soft: #121827;
+      --bg-panel: #101624;
+      --bg-panel-strong: #151d2d;
+      --bg-panel-elevated: #192233;
+      --ink: #edf2ff;
+      --ink-soft: #b6bfd3;
+      --ink-faint: #6f7a94;
+      --line: rgba(185, 199, 236, 0.08);
+      --line-strong: rgba(185, 199, 236, 0.18);
+      --blue: #5f7cff;
+      --cyan: #4cd7f6;
+      --green: #3bd38a;
+      --amber: #ffbf62;
+      --red: #ff6a84;
+      --shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+      --radius-xl: 26px;
+      --radius-lg: 20px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --sidebar-width: 108px;
+      --rail-width: 360px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      background: var(--bg);
+      overflow: auto;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.28;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+
+    body.compact {
+      --radius-xl: 20px;
+      --radius-lg: 16px;
+      --radius-md: 13px;
+      --radius-sm: 10px;
+    }
+
+    h1, h2, h3, h4, p { margin: 0; }
+    button, input, select { font: inherit; }
+    a { color: inherit; }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+      min-height: 100vh;
+      padding: 18px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .sidebar {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 18px;
+      padding: 18px 12px;
+      border-radius: 30px;
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      height: calc(100vh - 36px);
+    }
+
+    .brand {
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      background: var(--blue);
+      box-shadow: 0 12px 24px rgba(95, 124, 255, 0.32);
+      font-weight: 800;
+      color: white;
+    }
+
+    .brand small {
+      font-size: 10px;
+      color: var(--ink-faint);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .nav {
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .nav-item {
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink-soft);
+      padding: 12px 8px;
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+      border-radius: 18px;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, color 120ms ease;
+    }
+
+    .nav-item:hover {
+      transform: translateY(-1px);
+      border-color: var(--line);
+      background: rgba(255,255,255,0.03);
+      color: var(--ink);
+    }
+
+    .nav-item.active {
+      background: rgba(95, 124, 255, 0.16);
+      border-color: rgba(95, 124, 255, 0.35);
+      color: white;
+    }
+
+    .nav-icon {
+      width: 18px;
+      height: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+    }
+
+    .nav-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      line-height: 1.3;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+      color: var(--ink-faint);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .workspace {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto auto auto;
+      gap: 18px;
+      min-height: 100%;
+    }
+
+    .topbar,
+    .summary-strip,
+    .panel,
+    .rail-card {
+      border: 1px solid var(--line);
+      background: var(--bg-panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .topbar {
+      border-radius: 26px;
+      padding: 18px 22px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .topbar-title {
+      display: grid;
+      gap: 6px;
+    }
+
+    .topbar-title span {
+      color: var(--ink-faint);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .topbar-title h1 {
+      font-family: "Baskerville", "Times New Roman", serif;
+      font-size: 2.15rem;
+      letter-spacing: -0.03em;
+    }
+
+    .global-search {
+      position: relative;
+    }
+
+    .global-search input {
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      color: var(--ink);
+      padding: 12px 18px 12px 42px;
+    }
+
+    .global-search::before {
+      content: "âŒ•";
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--ink-faint);
+      font-size: 15px;
+    }
+
+    .topbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: end;
+    }
+
+    .pill,
+    .live-chip,
+    .status-pill,
+    .source-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line-strong);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+
+    .live-chip { color: var(--cyan); background: rgba(76, 215, 246, 0.1); }
+    .status-pill.ok { color: var(--green); background: rgba(59, 211, 138, 0.12); }
+    .status-pill.warn { color: var(--amber); background: rgba(255, 191, 98, 0.12); }
+    .status-pill.danger { color: var(--red); background: rgba(255, 106, 132, 0.12); }
+    .status-pill.cool { color: var(--cyan); background: rgba(76, 215, 246, 0.1); }
+
+    .topbar-button,
+    .action-button,
+    .segmented button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      color: var(--ink);
+      padding: 11px 14px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+
+    .topbar-button:hover,
+    .action-button:hover,
+    .segmented button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(95, 124, 255, 0.32);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .topbar-button.primary,
+    .action-button.primary {
+      background: var(--blue);
+      border-color: rgba(95, 124, 255, 0.5);
+      color: white;
+      font-weight: 700;
+    }
+
+    .summary-strip {
+      border-radius: 24px;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .summary-card {
+      min-width: 0;
+      padding: 16px;
+      border-radius: 20px;
+      background: var(--bg-panel-strong);
+      border: 1px solid var(--line);
+      display: grid;
+      gap: 10px;
+    }
+
+    .summary-card span {
+      color: var(--ink-faint);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .summary-card strong {
+      font-family: "Baskerville", "Times New Roman", serif;
+      font-size: 2rem;
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .summary-card small {
+      color: var(--ink-faint);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--rail-width);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .main-stage {
+      display: grid;
+      align-content: start;
+    }
+
+    .view-panel {
+      display: none;
+      gap: 18px;
+      align-content: start;
+      min-height: auto;
+      overflow: visible;
+      padding-right: 0;
+    }
+
+    .view-panel.active {
+      display: grid;
+    }
+
+    .utility-rail {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+      overflow: visible;
+      padding-right: 0;
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      max-height: calc(100vh - 36px);
+      overflow-y: auto;
+    }
+
+    .scroll-hint {
+      font-size: 11px;
+      color: var(--ink-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .panel,
+    .rail-card {
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      min-width: 0;
+    }
+
+    .panel-head,
+    .stack-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    .panel-head h2,
+    .stack-head h3,
+    .rail-card h3 {
+      font-family: "Baskerville", "Times New Roman", serif;
+      font-size: 1.7rem;
+      letter-spacing: -0.03em;
+    }
+
+    .panel-head p,
+    .stack-head p,
+    .rail-card p,
+    .subtle {
+      color: var(--ink-faint);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .mission-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.85fr);
+      gap: 18px;
+    }
+
+    .visual-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      gap: 18px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .mini-card,
+    .stat-block,
+    .console,
+    .subpanel,
+    .table-shell,
+    .stack-list {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--bg-panel-strong);
+    }
+
+    .mini-card {
+      padding: 16px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .mini-card span,
+    .subpanel-title {
+      color: var(--ink-faint);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .mini-card strong {
+      font-size: 1.6rem;
+      font-family: "Baskerville", "Times New Roman", serif;
+      line-height: 1;
+    }
+
+    .budget-card {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+    }
+
+    .budget-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }
+
+    .budget-head strong {
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+
+    .budget-number {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .budget-number b {
+      font-family: "Baskerville", "Times New Roman", serif;
+      font-size: 2.2rem;
+      line-height: 1;
+    }
+
+    .meter {
+      height: 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .meter > span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: var(--cyan);
+      transition: width 220ms ease;
+    }
+
+    .subpanel {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .kv-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .kv-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      font-size: 13px;
+    }
+
+    .kv-row span:first-child {
+      color: var(--ink-faint);
+      min-width: 120px;
+    }
+
+    .kv-row strong,
+    .kv-row code {
+      text-align: right;
+      max-width: 58%;
+      overflow-wrap: anywhere;
+    }
+
+    .subgrid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .chart-card {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .chart-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+
+    .chart-head strong {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--ink-faint);
+    }
+
+    .chart-frame {
+      height: 220px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--bg-panel-strong);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-frame svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      color: var(--ink-faint);
+      font-size: 12px;
+    }
+
+    .legend-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-dot::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .chart-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .chart-summary .stack-item {
+      min-width: 0;
+    }
+
+    .table-toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .table-toolbar .left {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .table-search,
+    .settings-grid input,
+    .settings-grid select,
+    .workbench-grid input,
+    .workbench-grid select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      color: var(--ink);
+      border-radius: 14px;
+      padding: 11px 12px;
+    }
+
+    .table-search {
+      min-width: 240px;
+      max-width: 320px;
+    }
+
+    .table-shell {
+      overflow: hidden;
+    }
+
+    .table-wrap {
+      max-height: 440px;
+      overflow: auto;
+    }
+
+    .table-wrap.tall {
+      max-height: 680px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 12px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--ink-faint);
+      background: #111829;
+    }
+
+    tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    body.compact th,
+    body.compact td {
+      padding: 9px 10px;
+      font-size: 12px;
+    }
+
+    .entity {
+      display: grid;
+      gap: 5px;
+    }
+
+    .entity strong {
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .entity span,
+    .muted,
+    .meta {
+      color: var(--ink-faint);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .source-chip {
+      width: fit-content;
+      color: var(--ink-soft);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .source-chip.autobrr { color: var(--green); background: rgba(59, 211, 138, 0.12); }
+    .source-chip.rss { color: var(--amber); background: rgba(255, 191, 98, 0.12); }
+    .source-chip.radarr,
+    .source-chip.sonarr { color: var(--cyan); background: rgba(76, 215, 246, 0.12); }
+    .source-chip.manual_request,
+    .source-chip.manual { color: #c8d0ff; background: rgba(95, 124, 255, 0.14); }
+
+    .live-cue {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--ink-soft);
+    }
+
+    .live-cue::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 0 0 currentColor;
+      animation: pulse 2.2s infinite;
+    }
+
+    .live-cue.active { color: var(--green); }
+    .live-cue.waiting { color: var(--amber); }
+    .live-cue.blocked { color: var(--red); }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.12); }
+      70% { box-shadow: 0 0 0 9px rgba(255,255,255,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+    }
+
+    .workbench-grid,
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      color: var(--ink-soft);
+      font-size: 12px;
+    }
+
+    label span {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    small {
+      color: var(--ink-faint);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .segmented {
+      display: inline-flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .segmented button.active {
+      background: rgba(95, 124, 255, 0.16);
+      border-color: rgba(95, 124, 255, 0.35);
+      color: white;
+    }
+
+    .console {
+      min-height: 120px;
+      padding: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      overflow: auto;
+    }
+
+    .stack-list {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .stack-item {
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.025);
+      display: grid;
+      gap: 6px;
+    }
+
+    .stack-item strong {
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .stack-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      color: var(--ink-faint);
+      font-size: 12px;
+    }
+
+    .request-timeline {
+      display: grid;
+      gap: 8px;
+    }
+
+    .request-timeline .step {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .request-timeline .step strong {
+      color: var(--ink-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 11px;
+    }
+
+    .empty {
+      padding: 18px;
+      border: 1px dashed var(--line-strong);
+      border-radius: 16px;
+      text-align: center;
+      color: var(--ink-faint);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .settings-stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .settings-stack details {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.03);
+      overflow: hidden;
+    }
+
+    summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 15px 16px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    .summary-caption {
+      color: var(--ink-faint);
+      font-size: 12px;
+      font-weight: 400;
+    }
+
+    .settings-body {
+      padding: 0 16px 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .sticky-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .toolbar-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .danger { color: var(--red); }
+    .warn { color: var(--amber); }
+
+    @media (max-width: 1500px) {
+      .summary-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .utility-rail {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+
+    @media (max-width: 1160px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-rows: auto;
+        align-items: center;
+        position: static;
+        height: auto;
+      }
+
+      .brand,
+      .sidebar-footer {
+        display: none;
+      }
+
+      .nav {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .mission-grid,
+      .card-grid,
+      .utility-rail,
+      .summary-strip {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .request-timeline .step,
+      .toolbar-row,
+      .panel-head,
+      .stack-head {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: start;
+      }
+
+      .table-search {
+        min-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body data-view="overview">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">A</div>
+        <small>TransferOps control</small>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" type="button" data-view-target="overview" onclick="setView('overview')">
+          <span class="nav-icon">â—«</span>
+          <span class="nav-label">Overview</span>
+        </button>
+        <button class="nav-item" type="button" data-view-target="manual" onclick="setView('manual')">
+          <span class="nav-icon">âŒ</span>
+          <span class="nav-label">Manual Desk</span>
+        </button>
+        <button class="nav-item" type="button" data-view-target="fleet" onclick="setView('fleet')">
+          <span class="nav-icon">â‡†</span>
+          <span class="nav-label">Fleet</span>
+        </button>
+        <button class="nav-item" type="button" data-view-target="intelligence" onclick="setView('intelligence')">
+          <span class="nav-icon">â—Œ</span>
+          <span class="nav-label">Signals</span>
+        </button>
+        <button class="nav-item" type="button" data-view-target="settings" onclick="setView('settings')">
+          <span class="nav-icon">âš™</span>
+          <span class="nav-label">Settings</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span id="sidebar-live">live idle</span>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <div class="topbar-title">
+          <span>Policy-governed transfer controller</span>
+          <h1>TransferOps</h1>
+        </div>
+
+        <div class="global-search">
+          <input id="global-filter" type="search" placeholder="Filter visible tables, requests, or transfers" oninput="applyGlobalFilter()">
+        </div>
+
+        <div class="topbar-actions">
+          <span id="live-refresh-chip" class="live-chip">Live updates warming up</span>
+          <button id="density-toggle" class="topbar-button" type="button" onclick="toggleDensity()">Compact mode</button>
+          <button class="topbar-button" type="button" onclick="refreshDashboard()">Refresh now</button>
+        </div>
+      </header>
+
+      <section class="summary-strip">
+        <article class="summary-card">
+          <span>Protocol Budget</span>
+          <strong id="protocol-usage">{{ "%.1f"|format(snapshot.protocol_usage_bytes / 1000000000) }} GB</strong>
+          <small>automatic preferred-source lane - cap {{ managed_cap_gb }} GB</small>
+        </article>
+        <article class="summary-card">
+          <span>Manual Budget</span>
+          <strong id="manual-usage">{{ "%.1f"|format(snapshot.manual_usage_bytes / 1000000000) }} GB</strong>
+          <small>personal requests · cap {{ manual_cap_gb }} GB</small>
+        </article>
+        <article class="summary-card">
+          <span>Free Host Disk</span>
+          <strong id="free-host-disk">{{ "%.1f"|format((snapshot.free_host_disk_bytes or 0) / 1000000000) }} GB</strong>
+          <small id="host-disk-path">{{ settings.host_disk_check_path }}</small>
+        </article>
+        <article class="summary-card">
+          <span>Active Obligations</span>
+          <strong id="unresolved-must-keep">{{ snapshot.unresolved_must_keep }}</strong>
+          <small>retention obligations still unresolved</small>
+        </article>
+        <article class="summary-card">
+          <span>Upload Today</span>
+          <strong id="recent-upload">{{ "%.2f"|format(recent_upload_gb) }} GB</strong>
+          <small><span id="admit-count">{{ admit_count }}</span> admits · <span id="reject-count">{{ reject_count }}</span> rejects</small>
+        </article>
+      </section>
+
+      <div class="workspace-grid">
+        <div class="main-stage">
+          <section class="view-panel active" data-view-panel="overview">
+            <div class="mission-grid">
+              <section class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h2>Mission Control</h2>
+                    <p>Pressure, live intake posture, and scope health in one dense control surface.</p>
+                  </div>
+                  <span id="emergency-chip" class="status-pill {{ 'danger' if snapshot.emergency_mode else 'ok' }}">{{ "Emergency" if snapshot.emergency_mode else "Stable" }}</span>
+                </div>
+
+                <div class="card-grid">
+                  <div class="budget-card mini-card">
+                    <div class="budget-head">
+                      <strong>Protocol Lane</strong>
+                      <span class="meta">{{ managed_cap_gb }} GB cap</span>
+                    </div>
+                    <div class="budget-number">
+                      <b id="protocol-usage-large">{{ "%.1f"|format(snapshot.protocol_usage_bytes / 1000000000) }}</b>
+                      <span class="meta">GB</span>
+                    </div>
+                    <div class="meter"><span id="protocol-meter" style="width: {{ [100, ((snapshot.protocol_usage_bytes / 1000000000) / managed_cap_gb * 100) if managed_cap_gb else 0]|min }}%"></span></div>
+                    <div class="meta">Automatic protocol remains preferred-source only.</div>
+                  </div>
+
+                  <div class="budget-card mini-card">
+                    <div class="budget-head">
+                      <strong>Manual Lane</strong>
+                      <span class="meta">{{ manual_cap_gb }} GB cap</span>
+                    </div>
+                    <div class="budget-number">
+                      <b id="manual-usage-large">{{ "%.1f"|format(snapshot.manual_usage_bytes / 1000000000) }}</b>
+                      <span class="meta">GB</span>
+                    </div>
+                    <div class="meter"><span id="manual-meter" style="width: {{ [100, ((snapshot.manual_usage_bytes / 1000000000) / manual_cap_gb * 100) if manual_cap_gb else 0]|min }}%"></span></div>
+                    <div class="meta">Exact manual requests stay outside learner buckets.</div>
+                  </div>
+
+                  <div class="mini-card">
+                    <span>Protocol Pressure</span>
+                    <strong id="disk-pressure">{{ "%.2f"|format(protocol_lane.disk_pressure) }}</strong>
+                    <small id="protocol-lane-summary">automatic lane pressure and thresholding</small>
+                  </div>
+
+                  <div class="mini-card">
+                    <span>Manual Pressure</span>
+                    <strong id="final-threshold">{{ "%.2f"|format(manual_lane.final_threshold) }}</strong>
+                    <small id="manual-lane-summary">manual lane remains independent from protocol disk cap</small>
+                  </div>
+                </div>
+
+                <div class="subgrid">
+                  <div class="subpanel">
+                    <div class="subpanel-title">Lane Posture</div>
+                    <div class="kv-list">
+                      <div class="kv-row"><span>protocol lane</span><strong id="protocol-lane-state">{{ "blocked" if protocol_lane.reject_new_admits else "open" }}</strong></div>
+                      <div class="kv-row"><span>protocol reasons</span><code id="pressure-reasons">{{ protocol_lane.reasons|join(", ") if protocol_lane.reasons else "none" }}</code></div>
+                      <div class="kv-row"><span>manual lane</span><strong id="manual-lane-state">{{ "blocked" if manual_lane.reject_new_admits else "open" }}</strong></div>
+                      <div class="kv-row"><span>manual reasons</span><code id="manual-pressure-reasons">{{ manual_lane.reasons|join(", ") if manual_lane.reasons else "none" }}</code></div>
+                      <div class="kv-row"><span>manual unresolved / caps</span><strong id="manual-lane-limits">{{ manual_lane.unresolved_must_keep }} / {{ manual_lane.soft_unresolved_cap }} / {{ manual_lane.hard_unresolved_cap }}</strong></div>
+                    </div>
+                  </div>
+
+                  <div class="subpanel">
+                    <div class="subpanel-title">Managed Scope</div>
+                    <div class="kv-list">
+                      <div class="kv-row"><span>qB save path</span><code id="managed-save-path">{{ settings.qbit_save_path }}</code></div>
+                      <div class="kv-row"><span>host disk path</span><code id="managed-host-path">{{ settings.host_disk_check_path }}</code></div>
+                      <div class="kv-row"><span>managed category</span><strong id="managed-category">{{ settings.qbit_category }}</strong></div>
+                      <div class="kv-row"><span>managed tag</span><strong id="managed-tag">{{ settings.qbit_tag }}</strong></div>
+                    </div>
+                  </div>
+
+                  <div class="subpanel">
+                    <div class="subpanel-title">Integration posture</div>
+                    <div class="kv-list">
+                      <div class="kv-row"><span>Source intake</span><strong id="integration-autobrr">{{ "enabled" if integrations.autobrr.enabled else "disabled" }}</strong></div>
+                      <div class="kv-row"><span>delivery mode</span><strong id="autobrr-delivery-mode">{{ integrations.autobrr.delivery.mode }}</strong></div>
+                      <div class="kv-row"><span>bridge state</span><strong id="autobrr-bridge-state">{{ "active" if integrations.autobrr.delivery.enabled else "inactive" }}</strong></div>
+                      <div class="kv-row"><span>bridge last seen</span><strong id="autobrr-bridge-last-seen">{{ integrations.autobrr.delivery.last_seen_at or "n/a" }}</strong></div>
+                      <div class="kv-row"><span>RSS fallback</span><strong id="integration-rss">{{ "enabled" if integrations.rss.enabled else "disabled" }}</strong></div>
+                      <div class="kv-row"><span>Catalog</span><strong id="integration-arr">{{ "on" if integrations.radarr.enabled or integrations.sonarr.enabled else "off" }}</strong></div>
+                      <div class="kv-row"><span>Auxiliary APIs</span><strong id="integration-aux">{{ "on" if integrations.prowlarr.enabled or integrations.plex.enabled else "off" }}</strong></div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h2>Recent Decisions</h2>
+                    <p>Newest admits and rejects, always visible from the main screen.</p>
+                  </div>
+                  <span id="rss-chip" class="status-pill {{ 'warn' if integrations.rss.enabled else 'cool' }}">RSS {{ "enabled" if integrations.rss.enabled else "standby" }}</span>
+                </div>
+                <div class="table-toolbar">
+                  <div class="left">
+                    <input id="decision-filter" class="table-search" type="search" placeholder="Filter title, source, reason, or action" oninput="filterTable('decisions-table', this.value)">
+                  </div>
+                  <div class="subtle">Client-side filtering only.</div>
+                </div>
+                <div class="table-shell">
+                  <div class="table-wrap">
+                    <table id="decisions-table">
+                      <thead>
+                        <tr>
+                          <th>Release</th>
+                          <th>Source</th>
+                          <th>Score</th>
+                          <th>Action</th>
+                          <th>Reason</th>
+                        </tr>
+                      </thead>
+                      <tbody id="decisions-body">
+                        {% for decision, candidate in decisions %}
+                        <tr data-filter="{{ (candidate.title ~ ' ' ~ candidate.source ~ ' ' ~ (candidate.wanted_reason or '') ~ ' ' ~ decision.action ~ ' ' ~ (decision.rejection_reason or ''))|lower }}">
+                          <td><div class="entity"><strong>{{ candidate.title }}</strong><span>{{ candidate.created_at }}</span></div></td>
+                          <td><span class="source-chip {{ candidate.source }}">{{ candidate.source }}</span></td>
+                          <td>{{ "%.2f"|format(decision.score) }}</td>
+                          <td><span class="status-pill {{ 'ok' if decision.action in ['admit', 'dry_run'] else 'warn' }}">{{ decision.action }}</span></td>
+                          <td>{{ decision.rejection_reason or "admitted" }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="empty">No decisions recorded yet.</td></tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div class="visual-grid">
+              <section class="panel chart-card">
+                <div class="chart-head">
+                  <div>
+                    <strong>Decision Tempo</strong>
+                    <p class="subtle">Recent controller outcomes as a compact signal band instead of another wall of rows.</p>
+                  </div>
+                  <span class="scroll-hint">auto refreshes</span>
+                </div>
+                <div id="decision-chart" class="chart-frame"></div>
+                <div class="chart-legend">
+                  <span class="legend-dot" style="color: var(--green);">admits</span>
+                  <span class="legend-dot" style="color: var(--red);">rejects</span>
+                  <span class="legend-dot" style="color: var(--cyan);">score trend</span>
+                </div>
+              </section>
+
+              <section class="panel chart-card">
+                <div class="chart-head">
+                  <div>
+                    <strong>Intake and Budget Snapshot</strong>
+                    <p class="subtle">Current source mix and disk split without opening secondary views.</p>
+                  </div>
+                </div>
+                <div id="source-budget-summary" class="chart-summary">
+                  <div class="stack-item">
+                    <strong>Source intake</strong>
+                    <div class="stack-meta"><span>{{ source_counts.get('autobrr', 0) }} candidates</span></div>
+                  </div>
+                  <div class="stack-item">
+                    <strong>rss</strong>
+                    <div class="stack-meta"><span>{{ source_counts.get('rss', 0) }} candidates</span></div>
+                  </div>
+                  <div class="stack-item">
+                    <strong>manual</strong>
+                    <div class="stack-meta"><span>{{ source_counts.get('manual_request', 0) }} candidates</span></div>
+                  </div>
+                </div>
+                <div id="budget-bars" class="chart-frame"></div>
+              </section>
+            </div>
+
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Managed Transfers Snapshot</h2>
+                  <p>Your qB-managed scope, kept compact but still fully inspectable.</p>
+                </div>
+              </div>
+              <div class="table-toolbar">
+                <div class="left">
+                  <input id="transfer-filter" class="table-search" type="search" placeholder="Filter title, state, path, or tag" oninput="filterTable('torrents-table', this.value)">
+                </div>
+                <div class="subtle">Full fleet view also lives in the Fleet tab.</div>
+              </div>
+              <div class="table-shell">
+                <div class="table-wrap">
+                  <table id="torrents-table">
+                    <thead>
+                      <tr>
+                        <th>Transfer</th>
+                        <th>State</th>
+                        <th>Uploaded</th>
+                        <th>Ratio</th>
+                        <th>Path</th>
+                      </tr>
+                    </thead>
+                    <tbody id="torrents-body">
+                      {% for torrent in torrents %}
+                      <tr data-filter="{{ (torrent.title ~ ' ' ~ torrent.state ~ ' ' ~ (torrent.save_path or '') ~ ' ' ~ (torrent.tags or ''))|lower }}">
+                        <td><div class="entity"><strong>{{ torrent.title }}</strong><span>{{ torrent.tags }}</span></div></td>
+                        <td><span class="status-pill {{ 'danger' if torrent.state == 'error' else 'warn' if torrent.state in ['must_keep', 'hot'] else 'ok' }}">{{ torrent.state }}</span></td>
+                        <td>{{ "%.2f"|format(torrent.uploaded_bytes / 1000000000) }} GB</td>
+                        <td>{{ "%.2f"|format(torrent.ratio) }}</td>
+                        <td><code>{{ torrent.save_path or "" }}</code></td>
+                      </tr>
+                      {% else %}
+                      <tr><td colspan="5" class="empty">No managed transfers tracked yet.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          </section>
+
+          <section class="view-panel" data-view-panel="manual">
+            <div class="mission-grid">
+              <section class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h2>Manual Request Desk</h2>
+                    <p>Search exact candidates, preview before commit, and keep personal requests out of the automatic learner.</p>
+                  </div>
+                  <span class="status-pill cool">manual lane</span>
+                </div>
+
+                <div class="workbench-grid">
+                  <label><span>Media Type</span><select id="workbench_media_type"><option value="movie">movie</option><option value="series">series</option><option value="episode" selected>episode</option></select></label>
+                  <label><span>Title</span><input id="workbench_title" placeholder="Rick and Morty"></label>
+                  <label><span>Year</span><input id="workbench_year" type="number" placeholder="optional"></label>
+                  <label><span>Season</span><input id="workbench_season" type="number" placeholder="4"></label>
+                  <label><span>Episode</span><input id="workbench_episode" type="number" placeholder="6"></label>
+                  <label><span>Quality Hint</span><input id="workbench_quality" placeholder="2160p or 1080p"></label>
+                  <label><span>Language Hint</span><input id="workbench_language" placeholder="english"></label>
+                  <label><span>Preferred Resolutions</span><input id="workbench_preferred_resolutions" value="{{ settings.manual_request_preferred_resolutions }}"></label>
+                  <label><span>Preferred Languages</span><input id="workbench_preferred_languages" value="{{ settings.manual_request_preferred_languages }}"></label>
+                  <label><span>Candidate Limit</span><input id="workbench_candidate_limit" type="number" value="{{ settings.manual_request_candidate_limit }}"></label>
+                  <label><span>Exact Match Required</span><select id="workbench_exact_match"><option value="">auto</option><option value="true" selected>true</option><option value="false">false</option></select></label>
+                  <label><span>Queue Library Handoff</span><select id="workbench_add_to_plex"><option value="true" selected>true</option><option value="false">false</option></select></label>
+                </div>
+
+                <div class="toolbar-row">
+                  <div class="segmented">
+                    <button type="button" onclick="previewRequest()">Preview candidates</button>
+                    <button type="button" class="active" onclick="fulfillRequest()">Fulfill request</button>
+                  </div>
+                  <span class="subtle">Preview is safe. Fulfill still respects manual pool and banned-term backstops.</span>
+                </div>
+
+                <div id="workbench-result" class="console">Preview and fulfill responses will appear here with plan details, policy feedback, and selected candidates.</div>
+              </section>
+
+              <section class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h2>Candidate Preview</h2>
+                    <p>Top-ranked exact candidates from the manual search lane.</p>
+                  </div>
+                  <span class="status-pill cool">no download</span>
+                </div>
+                <div id="candidate-preview" class="empty">No candidate preview yet.</div>
+              </section>
+            </div>
+
+            <div class="mission-grid">
+              <section class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h2>Request Ledger</h2>
+                    <p>Status, failure category, library state, and the request timeline in one place.</p>
+                  </div>
+                </div>
+                <div class="table-toolbar">
+                  <div class="left">
+                    <input id="request-filter" class="table-search" type="search" placeholder="Filter title, status, path, or failure" oninput="filterTable('requests-table', this.value)">
+                  </div>
+                  <div class="subtle">This panel live-refreshes when agent endpoints are reachable.</div>
+                </div>
+                <div class="table-shell">
+                  <div class="table-wrap tall">
+                    <table id="requests-table">
+                      <thead>
+                        <tr>
+                          <th>Request</th>
+                          <th>Status</th>
+                          <th>Path</th>
+                          <th>Library</th>
+                          <th>Timeline</th>
+                        </tr>
+                      </thead>
+                      <tbody id="requests-body">
+                        {% for request in manual_requests %}
+                        <tr data-filter="{{ (request.title ~ ' ' ~ request.media_type ~ ' ' ~ (request.status or '') ~ ' ' ~ (request.failure_category or '') ~ ' ' ~ (request.execution_path or ''))|lower }}">
+                          <td><div class="entity"><strong>{{ request.title }}</strong><span>{{ request.media_type }}{% if request.season %} · S{{ "%02d"|format(request.season) }}{% endif %}{% if request.episode %}E{{ "%02d"|format(request.episode) }}{% endif %}</span></div></td>
+                          <td><div class="entity"><strong>{{ request.status }}</strong><span class="live-cue {{ 'active' if request.status in ['admitted', 'completed'] else 'blocked' if request.failure_category else 'waiting' }}">{{ 'progressing' if request.status in ['admitted', 'completed'] else 'blocked' if request.failure_category else 'awaiting next step' }}</span></div></td>
+                          <td>{{ request.execution_path or "" }}</td>
+                          <td>
+                            <div class="entity">
+                              {% if request.linked_torrent %}
+                              <strong>{{ request.linked_torrent.state }}</strong>
+                              <span>executor - {{ "%.0f"|format(request.linked_torrent.progress * 100) }}%</span>
+                              {% elif request.library_handoff %}
+                              <strong>{{ request.library_handoff.phase or request.library_handoff.status }}</strong>
+                              {% if request.library_handoff.last_error %}<span class="danger">{{ request.library_handoff.last_error }}</span>{% endif %}
+                              {% else %}
+                              <strong>{{ request.arr_item_id or "" }}</strong>
+                              {% endif %}
+                            </div>
+                          </td>
+                          <td>
+                            <div class="request-timeline">
+                              {% for step in request.timeline %}
+                              <div class="step">
+                                <strong class="{{ 'danger' if step.status == 'failed' else 'warn' if step.status == 'pending' else '' }}">{{ step.step }}</strong>
+                                <span>{{ step.detail }}</span>
+                              </div>
+                              {% endfor %}
+                            </div>
+                          </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="empty">No manual requests recorded yet.</td></tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="stack-head">
+                  <div>
+                    <h3>Library and TV frontier</h3>
+                    <p>Library handoffs and follow-up priorities without leaving the manual desk.</p>
+                  </div>
+                </div>
+                <div class="subgrid">
+                  <div class="stack-list" id="handoffs-list">
+                    {% for handoff in library_handoffs[:5] %}
+                    <div class="stack-item">
+                      <strong>{{ handoff.title }}</strong>
+                      <div class="stack-meta">
+                        <span>{{ handoff.media_type }}</span>
+                        <span>{{ handoff.status }}</span>
+                        {% if handoff.last_error %}<span class="danger">{{ handoff.last_error }}</span>{% endif %}
+                      </div>
+                    </div>
+                    {% else %}
+                    <div class="empty">No library handoffs queued.</div>
+                    {% endfor %}
+                  </div>
+                  <div class="stack-list" id="tv-frontier-list">
+                    {% for item in tv_priorities[:5] %}
+                    <div class="stack-item">
+                      <strong>{{ item.series_title }}</strong>
+                      <div class="stack-meta">
+                        <span>S{{ "%02d"|format(item.season) }}E{{ "%02d"|format(item.episode) }}</span>
+                        {% if item.reason %}<span>{{ item.reason }}</span>{% endif %}
+                      </div>
+                    </div>
+                    {% else %}
+                    <div class="empty">No TV frontier tracked yet.</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section class="view-panel" data-view-panel="fleet">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Managed Transfers</h2>
+                  <p>The full qB-managed scope with filterable rows and live refresh.</p>
+                </div>
+                <span class="status-pill cool">qB-backed</span>
+              </div>
+              <div class="table-toolbar">
+                <div class="left">
+                  <input id="fleet-global-filter" class="table-search" type="search" placeholder="Filter title, state, path, or tag" oninput="filterTable('fleet-table', this.value)">
+                </div>
+                <div class="subtle">The controller only shows items inside the managed category/tag/save-path scope.</div>
+              </div>
+              <div class="table-shell">
+                <div class="table-wrap tall">
+                  <table id="fleet-table">
+                    <thead>
+                      <tr>
+                        <th>Transfer</th>
+                        <th>State</th>
+                        <th>Uploaded</th>
+                        <th>Ratio</th>
+                        <th>Seed Time</th>
+                        <th>Safe Estimate</th>
+                        <th>Tags</th>
+                        <th>Save Path</th>
+                      </tr>
+                    </thead>
+                    <tbody id="fleet-body">
+                      {% for torrent in torrents %}
+                      <tr data-filter="{{ (torrent.title ~ ' ' ~ torrent.state ~ ' ' ~ (torrent.save_path or '') ~ ' ' ~ (torrent.tags or ''))|lower }}">
+                        <td><div class="entity"><strong>{{ torrent.title }}</strong><span>{{ torrent.category or "" }}</span></div></td>
+                        <td><span class="status-pill {{ 'danger' if torrent.state == 'error' else 'warn' if torrent.state in ['must_keep', 'hot'] else 'ok' }}">{{ torrent.state }}</span></td>
+                        <td>{{ "%.2f"|format(torrent.uploaded_bytes / 1000000000) }} GB</td>
+                        <td>{{ "%.2f"|format(torrent.ratio) }}</td>
+                        <td>{{ torrent.seed_time_seconds }}</td>
+                        <td>{{ torrent.tracker_safe_estimate_hours or "" }}</td>
+                        <td>{{ torrent.tags }}</td>
+                        <td><code>{{ torrent.save_path or "" }}</code></td>
+                      </tr>
+                      {% else %}
+                      <tr><td colspan="8" class="empty">No managed transfers tracked yet.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          </section>
+
+          <section class="view-panel" data-view-panel="intelligence">
+            <div class="mission-grid">
+              <section class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h2>Wanted Signals</h2>
+                    <p>Catalog overlays that influence scoring without owning your seeding workflow.</p>
+                  </div>
+                  <span class="status-pill cool">{{ wanted_items|length }} visible</span>
+                </div>
+                <div class="table-toolbar">
+                  <div class="left">
+                    <input id="wanted-filter" class="table-search" type="search" placeholder="Filter source, title, year, or reason" oninput="filterTable('wanted-table', this.value)">
+                  </div>
+                </div>
+                <div class="table-shell">
+                  <div class="table-wrap">
+                    <table id="wanted-table">
+                      <thead>
+                        <tr>
+                          <th>Source</th>
+                          <th>Title</th>
+                          <th>Year</th>
+                          <th>Reason</th>
+                        </tr>
+                      </thead>
+                      <tbody id="wanted-body">
+                        {% for item in wanted_items %}
+                        <tr data-filter="{{ (item.source ~ ' ' ~ item.title ~ ' ' ~ (item.year or '') ~ ' ' ~ (item.reason or ''))|lower }}">
+                          <td><span class="source-chip {{ item.source }}">{{ item.source }}</span></td>
+                          <td>{{ item.title }}</td>
+                          <td>{{ item.year or "" }}</td>
+                          <td>{{ item.reason or "" }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="empty">No wanted items synced.</td></tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h2>Learning Buckets</h2>
+                    <p>Inspectable priors, with cold buckets clearly labeled instead of hidden.</p>
+                  </div>
+                </div>
+                <div class="table-shell">
+                  <div class="table-wrap tall">
+                    <table id="buckets-table">
+                      <thead>
+                        <tr>
+                          <th>Bucket</th>
+                          <th>Samples</th>
+                          <th>1h</th>
+                          <th>6h</th>
+                          <th>24h</th>
+                          <th>7d</th>
+                          <th>Safe</th>
+                          <th>Stall</th>
+                          <th>Bonus</th>
+                        </tr>
+                      </thead>
+                      <tbody id="buckets-body">
+                        {% for bucket in buckets %}
+                        <tr>
+                          <td><div class="entity"><strong>{{ bucket.bucket_key }}</strong><span>{{ bucket.definition }}</span></div></td>
+                          <td>{{ bucket.sample_count }}{% if bucket.sample_count == 0 %} <span class="status-pill warn">untrained</span>{% endif %}</td>
+                          <td>{{ "%.2f"|format(bucket.ewma_upload_1h) }}</td>
+                          <td>{{ "%.2f"|format(bucket.ewma_upload_6h) }}</td>
+                          <td>{{ "%.2f"|format(bucket.ewma_upload_24h) }}</td>
+                          <td>{{ "%.2f"|format(bucket.ewma_upload_7d) }}</td>
+                          <td>{{ "%.1f"|format(bucket.ewma_time_to_safe_hours) }}</td>
+                          <td>{{ "%.2f"|format(bucket.stall_probability) }}</td>
+                          <td>{{ "%.2f"|format(bucket.uncertainty_bonus) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="9" class="empty">No bucket statistics collected yet.</td></tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section class="view-panel" data-view-panel="settings">
+            <section class="panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Runtime Settings</h2>
+                  <p>Live-editable config. Secret fields stay masked unless you intentionally replace them.</p>
+                </div>
+                <button class="action-button primary" type="button" onclick="saveSettings()">Save settings</button>
+              </div>
+
+              <div class="settings-stack">
+                <details open>
+                  <summary><span>Executor and Storage</span><span class="summary-caption">scope, save paths, disk caps</span></summary>
+                  <div class="settings-body">
+                    <div class="settings-grid">
+                      <label><span>qB Base URL <small>WebUI endpoint</small></span><input id="qbit_base_url" value="{{ settings.qbit_base_url }}"></label>
+                      <label><span>qB Username <small>stored in DB override if changed</small></span><input id="qbit_username" value="{{ settings.qbit_username }}"></label>
+                      <label><span>qB Password <small>leave blank to keep current</small></span><input id="qbit_password" type="password" placeholder="stored locally; leave blank to keep"></label>
+                      <label><span>Managed Category <small>used on add and sync scope</small></span><input id="qbit_category" value="{{ settings.qbit_category }}"></label>
+                      <label><span>Managed Tag <small>used on add and sync scope</small></span><input id="qbit_tag" value="{{ settings.qbit_tag }}"></label>
+                      <label><span>qB Save Path <small>Windows path seen by qB</small></span><input id="qbit_save_path" value="{{ settings.qbit_save_path }}"></label>
+                      <label><span>Manual Movies Path <small>target path for movie manual requests</small></span><input id="manual_movies_save_path" value="{{ settings.manual_movies_save_path }}"></label>
+                      <label><span>Manual Series Path <small>target path for series and episode manual requests</small></span><input id="manual_series_save_path" value="{{ settings.manual_series_save_path }}"></label>
+                      <label><span>Host Disk Path <small>WSL or local path used for free-space checks</small></span><input id="host_disk_check_path" value="{{ settings.host_disk_check_path }}"></label>
+                      <label><span>Managed Disk Cap GB <small>hard controller cap</small></span><input id="managed_disk_cap_gb" type="number" step="0.1" value="{{ settings.managed_disk_cap_gb }}"></label>
+                      <label><span>Manual Disk Cap GB <small>separate cap for manual requests</small></span><input id="manual_disk_cap_gb" type="number" step="0.1" value="{{ settings.manual_disk_cap_gb }}"></label>
+                      <label><span>Disk Reserve GB <small>reserved slack within cap</small></span><input id="disk_reserve_gb" type="number" step="0.1" value="{{ settings.disk_reserve_gb }}"></label>
+                      <label><span>Admission High Water GB <small>pressure ramps before hard stop</small></span><input id="admission_high_water_mark_gb" type="number" step="0.1" value="{{ settings.admission_high_water_mark_gb }}"></label>
+                      <label><span>Manual High Water GB <small>manual-request pressure ramps here</small></span><input id="manual_admission_high_water_mark_gb" type="number" step="0.1" value="{{ settings.manual_admission_high_water_mark_gb }}"></label>
+                      <label><span>Manual Debt Budget <small>manual unresolved budget before extra pressure</small></span><input id="manual_debt_budget" type="number" step="1" value="{{ settings.manual_debt_budget }}"></label>
+                      <label><span>Manual Soft Unresolved Cap <small>manual lane starts tightening here</small></span><input id="manual_soft_unresolved_cap" type="number" step="1" value="{{ settings.manual_soft_unresolved_cap }}"></label>
+                      <label><span>Manual Hard Unresolved Cap <small>manual lane stops here</small></span><input id="manual_hard_unresolved_cap" type="number" step="1" value="{{ settings.manual_hard_unresolved_cap }}"></label>
+                      <label><span>Minimum Free Host Disk GB <small>floor on the actual host mount</small></span><input id="minimum_free_host_disk_gb" type="number" step="0.1" value="{{ settings.minimum_free_host_disk_gb }}"></label>
+                    </div>
+                  </div>
+                </details>
+
+                <details>
+                  <summary><span>Source Intake</span><span class="summary-caption">event-first, feed fallback</span></summary>
+                  <div class="settings-body">
+                    <div class="settings-grid">
+                      <label><span>RSS Enabled</span><select id="rss_enabled"><option value="true" {% if settings.rss_enabled %}selected{% endif %}>true</option><option value="false" {% if not settings.rss_enabled %}selected{% endif %}>false</option></select></label>
+                      <label><span>RSS URL <small>masked in API responses</small></span><input id="rss_url" placeholder="stored locally; masked by API"></label>
+                      <label><span>RSS Limit</span><input id="rss_limit" type="number" value="{{ settings.rss_limit }}"></label>
+                      <label><span>Assume Preferred Source <small>for prefiltered feeds</small></span><select id="rss_assume_preferred"><option value="true" {% if settings.rss_assume_preferred %}selected{% endif %}>true</option><option value="false" {% if not settings.rss_assume_preferred %}selected{% endif %}>false</option></select></label>
+                      <label><span>Parse Description <small>extract size/category from provider-style descriptions</small></span><select id="rss_parse_description"><option value="true" {% if settings.rss_parse_description %}selected{% endif %}>true</option><option value="false" {% if not settings.rss_parse_description %}selected{% endif %}>false</option></select></label>
+                      <label><span>Compute Payload Hash <small>optional payload hash</small></span><select id="rss_compute_info_hash"><option value="true" {% if settings.rss_compute_info_hash %}selected{% endif %}>true</option><option value="false" {% if not settings.rss_compute_info_hash %}selected{% endif %}>false</option></select></label>
+                      <label><span>RSS Poll Interval Minutes</span><input id="rss_poll_interval_minutes" type="number" value="{{ settings.rss_poll_interval_minutes }}"></label>
+                      <label><span>Event Intake Enabled</span><select id="autobrr_enabled"><option value="true" {% if settings.autobrr_enabled %}selected{% endif %}>true</option><option value="false" {% if not settings.autobrr_enabled %}selected{% endif %}>false</option></select></label>
+                      <label><span>Event Intake Base URL</span><input id="autobrr_base_url" value="{{ settings.autobrr_base_url or '' }}"></label>
+                      <label><span>Event Intake API Key <small>for health testing only</small></span><input id="autobrr_api_key" type="password" placeholder="stored locally; leave blank to keep"></label>
+                      <label><span>Event Intake Webhook Secret <small>used for signed webhook validation</small></span><input id="autobrr_shared_secret" type="password" placeholder="stored locally; leave blank to keep"></label>
+                    </div>
+                  </div>
+                </details>
+
+                <details>
+                  <summary><span>Catalog Signals and Upstream APIs</span><span class="summary-caption">catalog, provider search, library handoff, and manual lanes</span></summary>
+                  <div class="settings-body">
+                    <div class="settings-grid">
+                      <label><span>Catalog A Enabled</span><select id="radarr_enabled"><option value="true" {% if settings.radarr_enabled %}selected{% endif %}>true</option><option value="false" {% if not settings.radarr_enabled %}selected{% endif %}>false</option></select></label>
+                      <label><span>Catalog A Base URL</span><input id="radarr_base_url" value="{{ settings.radarr_base_url or '' }}"></label>
+                      <label><span>Catalog A API Key</span><input id="radarr_api_key" type="password" placeholder="stored locally; leave blank to keep"></label>
+                      <label><span>Catalog A Root Folder</span><input id="radarr_root_folder_path" value="{{ settings.radarr_root_folder_path or '' }}"></label>
+                      <label><span>Catalog A Profile ID</span><input id="radarr_quality_profile_id" type="number" value="{{ settings.radarr_quality_profile_id or '' }}"></label>
+                      <label><span>Catalog B Enabled</span><select id="sonarr_enabled"><option value="true" {% if settings.sonarr_enabled %}selected{% endif %}>true</option><option value="false" {% if not settings.sonarr_enabled %}selected{% endif %}>false</option></select></label>
+                      <label><span>Catalog B Base URL</span><input id="sonarr_base_url" value="{{ settings.sonarr_base_url or '' }}"></label>
+                      <label><span>Catalog B API Key</span><input id="sonarr_api_key" type="password" placeholder="stored locally; leave blank to keep"></label>
+                      <label><span>Catalog B Root Folder</span><input id="sonarr_root_folder_path" value="{{ settings.sonarr_root_folder_path or '' }}"></label>
+                      <label><span>Catalog B Profile ID</span><input id="sonarr_quality_profile_id" type="number" value="{{ settings.sonarr_quality_profile_id or '' }}"></label>
+                      <label><span>Catalog B Locale Profile ID</span><input id="sonarr_language_profile_id" type="number" value="{{ settings.sonarr_language_profile_id or '' }}"></label>
+                      <label><span>Provider Search Enabled</span><select id="prowlarr_enabled"><option value="true" {% if settings.prowlarr_enabled %}selected{% endif %}>true</option><option value="false" {% if not settings.prowlarr_enabled %}selected{% endif %}>false</option></select></label>
+                      <label><span>Provider Search Base URL</span><input id="prowlarr_base_url" value="{{ settings.prowlarr_base_url or '' }}"></label>
+                      <label><span>Provider Search API Key</span><input id="prowlarr_api_key" type="password" placeholder="stored locally; leave blank to keep"></label>
+                      <label><span>Provider Search IDs</span><input id="prowlarr_manual_indexer_ids" value="{{ settings.prowlarr_manual_indexer_ids or '' }}" placeholder="e.g. 2 or 2,5"></label>
+                      <label><span>Library Handoff Enabled</span><select id="plex_enabled"><option value="true" {% if settings.plex_enabled %}selected{% endif %}>true</option><option value="false" {% if not settings.plex_enabled %}selected{% endif %}>false</option></select></label>
+                      <label><span>Library Base URL</span><input id="plex_base_url" value="{{ settings.plex_base_url or '' }}"></label>
+                      <label><span>Library Token</span><input id="plex_token" type="password" placeholder="stored locally; leave blank to keep"></label>
+                      <label><span>Library Asset Section ID</span><input id="plex_movies_section_id" type="number" value="{{ settings.plex_movies_section_id or '' }}"></label>
+                      <label><span>Library Collection Section ID</span><input id="plex_series_section_id" type="number" value="{{ settings.plex_series_section_id or '' }}"></label>
+                      <label><span>Library Handoff Enabled</span><select id="plex_handoff_enabled"><option value="true" {% if settings.plex_handoff_enabled %}selected{% endif %}>true</option><option value="false" {% if not settings.plex_handoff_enabled %}selected{% endif %}>false</option></select></label>
+                      <label><span>Library Handoff Interval Seconds</span><input id="plex_handoff_interval_seconds" type="number" value="{{ settings.plex_handoff_interval_seconds }}"></label>
+                      <label><span>Wanted Score Boost</span><input id="wanted_score_boost" type="number" step="0.1" value="{{ settings.wanted_score_boost }}"></label>
+                    </div>
+                  </div>
+                </details>
+
+                <details>
+                  <summary><span>Runtime and Access</span><span class="summary-caption">agent token, polling cadence, manual request controls</span></summary>
+                  <div class="settings-body">
+                    <div class="settings-grid">
+                      <label><span>Dry Run</span><select id="dry_run"><option value="true" {% if settings.dry_run %}selected{% endif %}>true</option><option value="false" {% if not settings.dry_run %}selected{% endif %}>false</option></select></label>
+                      <label><span>Dashboard Username</span><input id="dashboard_username" value="{{ settings.dashboard_username }}"></label>
+                      <label><span>Dashboard Password <small>leave blank to keep current</small></span><input id="dashboard_password" type="password" placeholder="stored locally; leave blank to keep"></label>
+                      <label><span>Agent API Token <small>used by MCP and external agents</small></span><input id="agent_api_token" type="password" placeholder="stored locally; leave blank to keep"></label>
+                      <label><span>Allow Catalog Adds For Manual Requests</span><select id="manual_requests_allow_arr_add"><option value="true" {% if settings.manual_requests_allow_arr_add %}selected{% endif %}>true</option><option value="false" {% if not settings.manual_requests_allow_arr_add %}selected{% endif %}>false</option></select></label>
+                      <label><span>Require Existing Catalog Item</span><select id="manual_requests_require_existing_arr_item"><option value="true" {% if settings.manual_requests_require_existing_arr_item %}selected{% endif %}>true</option><option value="false" {% if not settings.manual_requests_require_existing_arr_item %}selected{% endif %}>false</option></select></label>
+                      <label><span>Manual Request Catalog Timeout Minutes</span><input id="manual_requests_arr_timeout_minutes" type="number" value="{{ settings.manual_requests_arr_timeout_minutes }}"></label>
+                      <label><span>Manual Request Candidate Limit</span><input id="manual_request_candidate_limit" type="number" value="{{ settings.manual_request_candidate_limit }}"></label>
+                      <label><span>Preferred Resolutions</span><input id="manual_request_preferred_resolutions" value="{{ settings.manual_request_preferred_resolutions }}"></label>
+                      <label><span>Preferred Languages</span><input id="manual_request_preferred_languages" value="{{ settings.manual_request_preferred_languages }}"></label>
+                      <label><span>Banned Terms</span><input id="manual_request_banned_terms" value="{{ settings.manual_request_banned_terms }}"></label>
+                      <label><span>Poll Interval Seconds</span><input id="poll_interval_seconds" type="number" value="{{ settings.poll_interval_seconds }}"></label>
+                      <label><span>Reconcile Interval Seconds</span><input id="reconcile_interval_seconds" type="number" value="{{ settings.reconcile_interval_seconds }}"></label>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </section>
+          </section>
+        </div>
+
+        <aside class="utility-rail">
+          <section class="rail-card">
+            <div class="stack-head">
+              <div>
+                <h3>Action rail</h3>
+                <p>High-frequency controls stay parked here instead of scattered across the page.</p>
+              </div>
+            </div>
+            <div class="sticky-actions">
+              <button class="action-button primary" type="button" onclick="saveSettings()">Save settings</button>
+              <button class="action-button" type="button" onclick="postAction('/api/sync')">Manual sync</button>
+              <button class="action-button" type="button" onclick="postAction('/api/reconcile')">Manual reconcile</button>
+              <button class="action-button" type="button" onclick="postAction('/api/rss/import')">Import RSS</button>
+              <button class="action-button" type="button" onclick="postAction('/api/wanted/refresh')">Refresh wanted</button>
+              <button class="action-button" type="button" onclick="postAction('/api/agent/actions/process-library', true)">Process library</button>
+            </div>
+          </section>
+
+          <section class="rail-card">
+            <div class="stack-head">
+              <div>
+                <h3>Connectivity tests</h3>
+                <p>Quick health checks without leaving the dashboard.</p>
+              </div>
+            </div>
+            <div class="sticky-actions">
+              <button class="action-button" type="button" onclick="runTest('/api/settings/test-qb')">Test qB</button>
+              <button class="action-button" type="button" onclick="runTest('/api/settings/test-rss')">Test RSS</button>
+              <button class="action-button" type="button" onclick="runTest('/api/settings/test-autobrr')">Test autobrr</button>
+              <button class="action-button" type="button" onclick="runTest('/api/settings/test-radarr')">Test Catalog A</button>
+              <button class="action-button" type="button" onclick="runTest('/api/settings/test-sonarr')">Test Catalog B</button>
+              <button class="action-button" type="button" onclick="runTest('/api/settings/test-prowlarr')">Test Provider Search</button>
+              <button class="action-button" type="button" onclick="runTest('/api/settings/test-plex')">Test Library</button>
+            </div>
+          </section>
+
+          <section class="rail-card">
+            <div class="stack-head">
+              <div>
+                <h3>Active alerts</h3>
+                <p>Stale state, emergency posture, or intake drift should be visible immediately.</p>
+              </div>
+            </div>
+            <div id="alerts-list" class="stack-list">
+              {% if alerts %}
+                {% for alert in alerts %}
+                <div class="stack-item">
+                  <strong class="{{ 'danger' if alert.severity == 'critical' else 'warn' }}">{{ alert.alert_type }}</strong>
+                  <div class="stack-meta"><span>{{ alert.message }}</span></div>
+                </div>
+                {% endfor %}
+              {% else %}
+                <div class="empty">No active alerts.</div>
+              {% endif %}
+            </div>
+          </section>
+
+          <section class="rail-card">
+            <div class="stack-head">
+              <div>
+                <h3>Source mix</h3>
+                <p>What is actually feeding candidates into the controller right now.</p>
+              </div>
+            </div>
+            <div id="source-mix" class="stack-list">
+              {% for source, count in source_counts.items() %}
+              <div class="stack-item">
+                <strong>{{ source }}</strong>
+                <div class="stack-meta"><span>{{ count }} candidates</span></div>
+              </div>
+              {% else %}
+              <div class="empty">No source counts available.</div>
+              {% endfor %}
+            </div>
+          </section>
+
+          <section class="rail-card">
+            <div class="stack-head">
+              <div>
+                <h3>Operator console</h3>
+                <p>Save responses and manual action output stay here instead of hijacking the full page.</p>
+              </div>
+            </div>
+            <div id="settings-result" class="console">Settings save responses appear here.</div>
+            <div id="test-results" class="console">Connectivity tests and manual actions appear here.</div>
+          </section>
+        </aside>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const protocolCapGb = {{ managed_cap_gb|tojson }};
+    const manualCapGb = {{ manual_cap_gb|tojson }};
+    const defaultAgentToken = "transferops-local-agent";
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function formatGb(bytes) {
+      return `${((bytes || 0) / 1000000000).toFixed(2)} GB`;
+    }
+
+    function formatShortGb(bytes) {
+      return `${((bytes || 0) / 1000000000).toFixed(1)} GB`;
+    }
+
+    function formatMaybeDate(value) {
+      if (!value) return "n/a";
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) return value;
+      return parsed.toLocaleString();
+    }
+
+    function toBool(value) { return value === "true"; }
+
+    function setConsole(id, prefix, payload) {
+      document.getElementById(id).textContent = `${prefix}\n${JSON.stringify(payload, null, 2)}`;
+    }
+
+    function numberOrNull(id) {
+      const raw = document.getElementById(id).value;
+      return raw === "" ? null : Number(raw);
+    }
+
+    function getAgentHeaders() {
+      const tokenInput = document.getElementById("agent_api_token");
+      const token = (tokenInput && tokenInput.value.trim()) || defaultAgentToken;
+      return {"Authorization": `Bearer ${token}`};
+    }
+
+    function setView(name) {
+      document.body.dataset.view = name;
+      document.querySelectorAll("[data-view-target]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.viewTarget === name);
+      });
+      document.querySelectorAll("[data-view-panel]").forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.viewPanel === name);
+      });
+      localStorage.setItem("transferops-view", name);
+      applyGlobalFilter();
+    }
+
+    function hashToView(hash) {
+      const clean = (hash || "").replace(/^#/, "");
+      const mapping = {
+        overview: "overview",
+        requests: "manual",
+        manual: "manual",
+        manualdesk: "manual",
+        fleet: "fleet",
+        intelligence: "intelligence",
+        signals: "intelligence",
+        settings: "settings"
+      };
+      return mapping[clean.toLowerCase()] || null;
+    }
+
+    function applyStoredView() {
+      const fromHash = hashToView(window.location.hash);
+      const targetView = fromHash || localStorage.getItem("transferops-view") || "overview";
+      setView(targetView);
+      if (fromHash) {
+        window.setTimeout(() => window.scrollTo({top: 0, behavior: "instant"}), 0);
+      }
+    }
+
+    function syncHashWithView() {
+      const fromHash = hashToView(window.location.hash);
+      if (fromHash) {
+        setView(fromHash);
+        window.scrollTo({top: 0, behavior: "instant"});
+      }
+    }
+
+    function updateDensityButton() {
+      const compact = document.body.classList.contains("compact");
+      const button = document.getElementById("density-toggle");
+      if (button) button.textContent = compact ? "Spacious mode" : "Compact mode";
+    }
+
+    function toggleDensity() {
+      document.body.classList.toggle("compact");
+      localStorage.setItem("transferops-density", document.body.classList.contains("compact") ? "compact" : "comfortable");
+      updateDensityButton();
+    }
+
+    function applyStoredDensity() {
+      if (localStorage.getItem("transferops-density") === "compact") {
+        document.body.classList.add("compact");
+      }
+      updateDensityButton();
+    }
+
+    function currentViewTables() {
+      const view = document.body.dataset.view;
+      const map = {
+        overview: ["decisions-table", "torrents-table"],
+        manual: ["requests-table"],
+        fleet: ["fleet-table"],
+        intelligence: ["wanted-table", "buckets-table"],
+        settings: []
+      };
+      return map[view] || [];
+    }
+
+    function filterTable(tableId, query) {
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      const needle = (query || "").trim().toLowerCase();
+      const rows = table.querySelectorAll("tbody tr[data-filter]");
+      rows.forEach((row) => {
+        const haystack = row.dataset.filter || "";
+        row.style.display = !needle || haystack.includes(needle) ? "" : "none";
+      });
+    }
+
+    function applyGlobalFilter() {
+      const query = document.getElementById("global-filter").value;
+      currentViewTables().forEach((tableId) => filterTable(tableId, query));
+    }
+
+    function fetchJson(path, options = {}) {
+      return fetch(path, options).then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`${path} -> ${response.status}`);
+        }
+        return response.json();
+      });
+    }
+
+    function setLiveRefreshChip(message, tone = "live-chip") {
+      const chip = document.getElementById("live-refresh-chip");
+      if (!chip) return;
+      chip.className = tone === "live-chip" ? "live-chip" : `status-pill ${tone}`;
+      chip.textContent = message;
+      const sidebar = document.getElementById("sidebar-live");
+      if (sidebar) sidebar.textContent = message;
+    }
+
+    function renderSourceMix(sourceCounts) {
+      const target = document.getElementById("source-mix");
+      if (!target) return;
+      const entries = Object.entries(sourceCounts || {});
+      if (entries.length === 0) {
+        target.innerHTML = '<div class="empty">No source counts available.</div>';
+        return;
+      }
+      target.innerHTML = entries.map(([source, count]) => `
+        <div class="stack-item">
+          <strong>${escapeHtml(source)}</strong>
+          <div class="stack-meta"><span>${count} candidates</span></div>
+        </div>
+      `).join("");
+    }
+
+    function renderSourceBudgetSummary(sourceCounts) {
+      const target = document.getElementById("source-budget-summary");
+      if (!target) return;
+      const preferred = ["autobrr", "rss", "manual_request"];
+      target.innerHTML = preferred.map((key) => `
+        <div class="stack-item">
+          <strong>${escapeHtml(key)}</strong>
+          <div class="stack-meta"><span>${(sourceCounts && sourceCounts[key]) || 0} candidates</span></div>
+        </div>
+      `).join("");
+    }
+
+    function renderAlerts(alerts) {
+      const target = document.getElementById("alerts-list");
+      if (!target) return;
+      if (!alerts || alerts.length === 0) {
+        target.innerHTML = '<div class="empty">No active alerts.</div>';
+        return;
+      }
+      target.innerHTML = alerts.map((alert) => `
+        <div class="stack-item">
+          <strong class="${alert.severity === 'critical' ? 'danger' : 'warn'}">${escapeHtml(alert.alert_type)}</strong>
+          <div class="stack-meta"><span>${escapeHtml(alert.message)}</span></div>
+        </div>
+      `).join("");
+    }
+
+    function renderWantedItems(items) {
+      const body = document.getElementById("wanted-body");
+      if (!body) return;
+      if (!items || items.length === 0) {
+        body.innerHTML = '<tr><td colspan="4" class="empty">No wanted items synced.</td></tr>';
+        return;
+      }
+      body.innerHTML = items.map((item) => `
+        <tr data-filter="${escapeHtml(`${item.source} ${item.title} ${item.year || ''} ${item.reason || ''}`.toLowerCase())}">
+          <td><span class="source-chip ${escapeHtml(item.source)}">${escapeHtml(item.source)}</span></td>
+          <td>${escapeHtml(item.title)}</td>
+          <td>${escapeHtml(item.year || "")}</td>
+          <td>${escapeHtml(item.reason || "")}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderDecisionRows(rows, compact = false) {
+      const body = document.getElementById("decisions-body");
+      if (!body) return;
+      if (!rows || rows.length === 0) {
+        body.innerHTML = '<tr><td colspan="5" class="empty">No decisions recorded yet.</td></tr>';
+        return;
+      }
+      body.innerHTML = rows.map((row) => `
+        <tr data-filter="${escapeHtml(`${row.title} ${row.source} ${row.action} ${row.reason || ''}`.toLowerCase())}">
+          <td><div class="entity"><strong>${escapeHtml(row.title)}</strong><span>${formatMaybeDate(row.created_at)}</span></div></td>
+          <td><span class="source-chip ${escapeHtml(row.source)}">${escapeHtml(row.source)}</span></td>
+          <td>${Number(row.score || 0).toFixed(2)}</td>
+          <td><span class="status-pill ${["admit", "dry_run"].includes(row.action) ? "ok" : "warn"}">${escapeHtml(row.action)}</span></td>
+          <td>${escapeHtml(row.reason || "admitted")}</td>
+        </tr>
+      `).join("");
+      if (!compact) applyGlobalFilter();
+    }
+
+    function renderDecisionChart(rows) {
+      const target = document.getElementById("decision-chart");
+      if (!target) return;
+      if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty" style="margin:16px;">No decision history yet.</div>';
+        return;
+      }
+      const recent = rows.slice(0, 12).reverse();
+      const scores = recent.map((row) => Number(row.score || 0));
+      const minScore = Math.min(...scores);
+      const maxScore = Math.max(...scores);
+      const normalize = (value) => {
+        if (maxScore === minScore) return 110;
+        return 180 - ((value - minScore) / (maxScore - minScore)) * 130;
+      };
+      const points = recent.map((row, index) => {
+        const x = 28 + index * (recent.length > 1 ? 520 / (recent.length - 1) : 0);
+        const y = normalize(Number(row.score || 0));
+        return {x, y, row};
+      });
+      const line = points.map((point) => `${point.x},${point.y}`).join(" ");
+      const bars = points.map((point) => {
+        const color = ["admit", "dry_run"].includes(point.row.action) ? "rgba(59, 211, 138, 0.85)" : "rgba(255, 106, 132, 0.9)";
+        return `<line x1="${point.x}" y1="194" x2="${point.x}" y2="${point.row.action === 'reject' ? 156 : 122}" stroke="${color}" stroke-width="8" stroke-linecap="round" />`;
+      }).join("");
+      const dots = points.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="4.5" fill="#4cd7f6" stroke="#0b0f19" stroke-width="2" />`).join("");
+      target.innerHTML = `
+        <svg viewBox="0 0 580 220" preserveAspectRatio="none" role="img" aria-label="Recent decision tempo">
+          <defs>
+            <linearGradient id="decisionArea" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="rgba(76, 215, 246, 0.24)" />
+              <stop offset="100%" stop-color="rgba(76, 215, 246, 0)" />
+            </linearGradient>
+          </defs>
+          <g stroke="rgba(185,199,236,0.08)">
+            <line x1="24" y1="34" x2="556" y2="34" />
+            <line x1="24" y1="74" x2="556" y2="74" />
+            <line x1="24" y1="114" x2="556" y2="114" />
+            <line x1="24" y1="154" x2="556" y2="154" />
+            <line x1="24" y1="194" x2="556" y2="194" />
+          </g>
+          ${bars}
+          <path d="M ${points.map((point) => `${point.x} ${point.y}`).join(" L ")} L ${points[points.length - 1].x} 194 L ${points[0].x} 194 Z" fill="url(#decisionArea)" />
+          <polyline points="${line}" fill="none" stroke="#4cd7f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+          ${dots}
+        </svg>
+      `;
+    }
+
+    function renderBudgetBars(snapshot, sourceCounts) {
+      const target = document.getElementById("budget-bars");
+      if (!target) return;
+      const protocolPct = Math.min(100, protocolCapGb ? ((snapshot.protocol_usage_bytes || 0) / 1000000000) / protocolCapGb * 100 : 0);
+      const manualPct = Math.min(100, manualCapGb ? ((snapshot.manual_usage_bytes || 0) / 1000000000) / manualCapGb * 100 : 0);
+      const sourceTotal = Object.values(sourceCounts || {}).reduce((sum, value) => sum + value, 0) || 1;
+      const autobrrPct = ((sourceCounts?.autobrr || 0) / sourceTotal) * 100;
+      const rssPct = ((sourceCounts?.rss || 0) / sourceTotal) * 100;
+      const manualPctSource = ((sourceCounts?.manual_request || 0) / sourceTotal) * 100;
+      target.innerHTML = `
+        <svg viewBox="0 0 580 220" preserveAspectRatio="none" role="img" aria-label="Budget and intake bars">
+          <g font-size="12" fill="rgba(185,199,236,0.72)" font-family="Avenir Next, Segoe UI, sans-serif">
+            <text x="28" y="34">protocol budget</text>
+            <text x="28" y="86">manual budget</text>
+            <text x="28" y="138">source share</text>
+            <text x="28" y="190">rss/manual share</text>
+          </g>
+          <g>
+            <rect x="160" y="18" width="380" height="18" rx="9" fill="rgba(255,255,255,0.05)" />
+            <rect x="160" y="18" width="${3.8 * protocolPct}" height="18" rx="9" fill="#5f7cff" />
+            <rect x="160" y="70" width="380" height="18" rx="9" fill="rgba(255,255,255,0.05)" />
+            <rect x="160" y="70" width="${3.8 * manualPct}" height="18" rx="9" fill="#3bd38a" />
+            <rect x="160" y="122" width="380" height="18" rx="9" fill="rgba(255,255,255,0.05)" />
+            <rect x="160" y="122" width="${3.8 * autobrrPct}" height="18" rx="9" fill="#4cd7f6" />
+            <rect x="160" y="174" width="380" height="18" rx="9" fill="rgba(255,255,255,0.05)" />
+            <rect x="160" y="174" width="${3.8 * rssPct}" height="18" rx="9" fill="#ffbf62" />
+            <rect x="${160 + (3.8 * rssPct)}" y="174" width="${3.8 * manualPctSource}" height="18" rx="9" fill="#7b8cff" />
+          </g>
+        </svg>
+      `;
+    }
+
+    function renderTorrents(rows, bodyId = "torrents-body", tableId = "torrents-table", full = false) {
+      const body = document.getElementById(bodyId);
+      if (!body) return;
+      const totalUpload = (rows || []).reduce((sum, row) => sum + (row.uploaded_bytes || 0), 0);
+      document.getElementById("recent-upload").textContent = formatGb(totalUpload);
+      if (!rows || rows.length === 0) {
+        body.innerHTML = full
+          ? '<tr><td colspan="8" class="empty">No managed transfers tracked yet.</td></tr>'
+          : '<tr><td colspan="5" class="empty">No managed transfers tracked yet.</td></tr>';
+        return;
+      }
+      body.innerHTML = rows.map((row) => {
+        const filterValue = escapeHtml(`${row.title} ${row.state} ${row.save_path || ''} ${row.tags || ''}`.toLowerCase());
+        if (full) {
+          return `
+            <tr data-filter="${filterValue}">
+              <td><div class="entity"><strong>${escapeHtml(row.title)}</strong><span>${escapeHtml(row.category || "")}</span></div></td>
+              <td><span class="status-pill ${row.state === "error" ? "danger" : ["must_keep", "hot"].includes(row.state) ? "warn" : "ok"}">${escapeHtml(row.state)}</span></td>
+              <td>${formatGb(row.uploaded_bytes)}</td>
+              <td>${Number(row.ratio || 0).toFixed(2)}</td>
+              <td>${row.seed_time_seconds || 0}</td>
+              <td>${row.tracker_safe_estimate_hours || ""}</td>
+              <td>${escapeHtml(row.tags || "")}</td>
+              <td><code>${escapeHtml(row.save_path || "")}</code></td>
+            </tr>
+          `;
+        }
+        return `
+          <tr data-filter="${filterValue}">
+            <td><div class="entity"><strong>${escapeHtml(row.title)}</strong><span>${escapeHtml(row.tags || "")}</span></div></td>
+            <td><span class="status-pill ${row.state === "error" ? "danger" : ["must_keep", "hot"].includes(row.state) ? "warn" : "ok"}">${escapeHtml(row.state)}</span></td>
+            <td>${formatGb(row.uploaded_bytes)}</td>
+            <td>${Number(row.ratio || 0).toFixed(2)}</td>
+            <td><code>${escapeHtml(row.save_path || "")}</code></td>
+          </tr>
+        `;
+      }).join("");
+      applyGlobalFilter();
+      const fleetInput = document.getElementById(tableId === "fleet-table" ? "fleet-global-filter" : "transfer-filter");
+      if (fleetInput) filterTable(tableId, fleetInput.value);
+    }
+
+    function renderBuckets(rows) {
+      const body = document.getElementById("buckets-body");
+      if (!body) return;
+      if (!rows || rows.length === 0) {
+        body.innerHTML = '<tr><td colspan="9" class="empty">No bucket statistics collected yet.</td></tr>';
+        return;
+      }
+      body.innerHTML = rows.slice(0, 40).map((row) => `
+        <tr>
+          <td><div class="entity"><strong>${escapeHtml(row.bucket_key)}</strong><span>${escapeHtml(JSON.stringify(row.definition || {}))}</span></div></td>
+          <td>${row.sample_count}${row.sample_count === 0 ? ' <span class="status-pill warn">untrained</span>' : ''}</td>
+          <td>${Number(row.ewma_upload_1h || 0).toFixed(2)}</td>
+          <td>${Number(row.ewma_upload_6h || 0).toFixed(2)}</td>
+          <td>${Number(row.ewma_upload_24h || 0).toFixed(2)}</td>
+          <td>${Number(row.ewma_upload_7d || 0).toFixed(2)}</td>
+          <td>${Number(row.ewma_time_to_safe_hours || 0).toFixed(1)}</td>
+          <td>${Number(row.stall_probability || 0).toFixed(2)}</td>
+          <td>${Number(row.uncertainty_bonus || 0).toFixed(2)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderManualRequests(rows) {
+      const body = document.getElementById("requests-body");
+      if (!body) return;
+      if (!rows || rows.length === 0) {
+        body.innerHTML = '<tr><td colspan="5" class="empty">No manual requests recorded yet.</td></tr>';
+        return;
+      }
+      body.innerHTML = rows.map((row) => {
+        const timeline = (row.timeline || []).map((step) => `
+          <div class="step">
+            <strong class="${step.status === "failed" ? "danger" : step.status === "pending" ? "warn" : ""}">${escapeHtml(step.step)}</strong>
+            <span>${escapeHtml(step.detail)}</span>
+          </div>
+        `).join("");
+        const libraryState = row.linked_torrent
+          ? `<div class="entity"><strong>${escapeHtml(row.linked_torrent.state || "linked")}</strong><span>executor - ${Math.round((row.linked_torrent.progress || 0) * 100)}%</span></div>`
+          : row.library_handoff
+            ? `<div class="entity"><strong>${escapeHtml(row.library_handoff.phase || row.library_handoff.status)}</strong>${row.library_handoff.last_error ? `<span class="danger">${escapeHtml(row.library_handoff.last_error)}</span>` : ""}</div>`
+            : escapeHtml(row.arr_item_id || "");
+        return `
+          <tr data-filter="${escapeHtml(`${row.title} ${row.media_type} ${row.status || ""} ${row.failure_category || ""} ${row.execution_path || ""}`.toLowerCase())}">
+            <td><div class="entity"><strong>${escapeHtml(row.title)}</strong><span>${escapeHtml(row.media_type)}${row.season ? ` · S${String(row.season).padStart(2, "0")}` : ""}${row.episode ? `E${String(row.episode).padStart(2, "0")}` : ""}</span></div></td>
+            <td><div class="entity"><strong>${escapeHtml(row.status)}</strong><span class="live-cue ${["admitted", "completed"].includes(row.status) ? "active" : row.failure_category ? "blocked" : "waiting"}">${["admitted", "completed"].includes(row.status) ? "progressing" : row.failure_category ? "blocked" : "awaiting next step"}</span></div></td>
+            <td>${escapeHtml(row.execution_path || "")}</td>
+            <td>${libraryState}</td>
+            <td><div class="request-timeline">${timeline}</div></td>
+          </tr>
+        `;
+      }).join("");
+      applyGlobalFilter();
+      const requestFilter = document.getElementById("request-filter");
+      if (requestFilter) filterTable("requests-table", requestFilter.value);
+    }
+
+    function renderHandoffs(rows) {
+      const target = document.getElementById("handoffs-list");
+      if (!target) return;
+      if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty">No library handoffs queued.</div>';
+        return;
+      }
+      target.innerHTML = rows.slice(0, 5).map((row) => `
+        <div class="stack-item">
+          <strong>${escapeHtml(row.title)}</strong>
+          <div class="stack-meta">
+            <span>${escapeHtml(row.media_type)}</span>
+            <span>${escapeHtml(row.status)}</span>
+            <span class="live-cue ${["completed", "scan_requested"].includes(row.status) ? "active" : row.status === "failed" ? "blocked" : "waiting"}">${["completed", "scan_requested"].includes(row.status) ? "imported or scanning" : row.status === "failed" ? "needs attention" : "queued"}</span>
+            ${row.last_error ? `<span class="danger">${escapeHtml(row.last_error)}</span>` : ""}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderTvPriorities(rows) {
+      const target = document.getElementById("tv-frontier-list");
+      if (!target) return;
+      if (!rows || rows.length === 0) {
+        target.innerHTML = '<div class="empty">No TV frontier tracked yet.</div>';
+        return;
+      }
+      target.innerHTML = rows.slice(0, 5).map((row) => `
+        <div class="stack-item">
+          <strong>${escapeHtml(row.series_title)}</strong>
+          <div class="stack-meta">
+            <span>S${String(row.season).padStart(2, "0")}E${String(row.episode).padStart(2, "0")}</span>
+            ${row.reason ? `<span>${escapeHtml(row.reason)}</span>` : ""}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function updateStatusView(statusData) {
+      const snapshot = statusData.snapshot || {};
+      const protocolLane = statusData.lane_status?.protocol || {};
+      const manualLane = statusData.lane_status?.manual || {};
+      document.getElementById("protocol-usage").textContent = formatShortGb(snapshot.protocol_usage_bytes);
+      document.getElementById("manual-usage").textContent = formatShortGb(snapshot.manual_usage_bytes);
+      document.getElementById("protocol-usage-large").textContent = ((snapshot.protocol_usage_bytes || 0) / 1000000000).toFixed(1);
+      document.getElementById("manual-usage-large").textContent = ((snapshot.manual_usage_bytes || 0) / 1000000000).toFixed(1);
+      document.getElementById("free-host-disk").textContent = formatShortGb(snapshot.free_host_disk_bytes || 0);
+      document.getElementById("unresolved-must-keep").textContent = snapshot.unresolved_must_keep ?? 0;
+      document.getElementById("disk-pressure").textContent = Number(protocolLane.disk_pressure ?? snapshot.disk_pressure ?? 0).toFixed(2);
+      document.getElementById("final-threshold").textContent = Number(manualLane.final_threshold ?? snapshot.final_threshold ?? 0).toFixed(2);
+      document.getElementById("protocol-lane-state").textContent = protocolLane.reject_new_admits ? "blocked" : "open";
+      document.getElementById("manual-lane-state").textContent = manualLane.reject_new_admits ? "blocked" : "open";
+      document.getElementById("pressure-reasons").textContent = Array.isArray(protocolLane.reasons) ? protocolLane.reasons.join(", ") || "none" : "none";
+      document.getElementById("manual-pressure-reasons").textContent = Array.isArray(manualLane.reasons) ? manualLane.reasons.join(", ") || "none" : "none";
+      document.getElementById("manual-lane-limits").textContent = `${manualLane.unresolved_must_keep ?? 0} / ${manualLane.soft_unresolved_cap ?? 0} / ${manualLane.hard_unresolved_cap ?? 0}`;
+      document.getElementById("protocol-lane-summary").textContent = protocolLane.reject_new_admits
+        ? "automatic lane is currently blocked by protocol pressure"
+        : "automatic lane is open for protocol admits";
+      document.getElementById("manual-lane-summary").textContent = manualLane.reject_new_admits
+        ? "manual lane is currently blocked by its own policy or shared safety floor"
+        : "manual lane is open even if protocol backlog is heavy";
+
+      const protocolPct = Math.min(100, protocolCapGb ? ((snapshot.protocol_usage_bytes || 0) / 1000000000) / protocolCapGb * 100 : 0);
+      const manualPct = Math.min(100, manualCapGb ? ((snapshot.manual_usage_bytes || 0) / 1000000000) / manualCapGb * 100 : 0);
+      document.getElementById("protocol-meter").style.width = `${protocolPct}%`;
+      document.getElementById("manual-meter").style.width = `${manualPct}%`;
+
+      const emergencyChip = document.getElementById("emergency-chip");
+      emergencyChip.className = `status-pill ${snapshot.emergency_mode ? "danger" : "ok"}`;
+      emergencyChip.textContent = snapshot.emergency_mode ? "Emergency" : "Stable";
+
+      const rssChip = document.getElementById("rss-chip");
+      rssChip.className = `status-pill ${(statusData.integrations?.rss?.enabled) ? "warn" : "cool"}`;
+      rssChip.textContent = `RSS ${(statusData.integrations?.rss?.enabled) ? "enabled" : "standby"}`;
+
+      document.getElementById("integration-autobrr").textContent = statusData.integrations?.autobrr?.enabled ? "enabled" : "disabled";
+      document.getElementById("autobrr-delivery-mode").textContent = statusData.integrations?.autobrr?.delivery?.mode || "unknown";
+      document.getElementById("autobrr-bridge-state").textContent = statusData.integrations?.autobrr?.delivery?.enabled ? "active" : "inactive";
+      document.getElementById("autobrr-bridge-last-seen").textContent = statusData.integrations?.autobrr?.delivery?.last_seen_at || "n/a";
+      document.getElementById("integration-rss").textContent = statusData.integrations?.rss?.enabled ? "enabled" : "disabled";
+      document.getElementById("integration-arr").textContent = (statusData.integrations?.radarr?.enabled || statusData.integrations?.sonarr?.enabled) ? "on" : "off";
+      document.getElementById("integration-aux").textContent = (statusData.integrations?.prowlarr?.enabled || statusData.integrations?.plex?.enabled) ? "on" : "off";
+
+      renderWantedItems(statusData.wanted_items || []);
+      renderAlerts(statusData.alerts || []);
+      renderSourceMix(statusData.source_counts || {});
+      renderSourceBudgetSummary(statusData.source_counts || {});
+      renderBudgetBars(snapshot, statusData.source_counts || {});
+    }
+
+    function getPayload() {
+      const payload = {
+        qbit_base_url: document.getElementById("qbit_base_url").value,
+        qbit_username: document.getElementById("qbit_username").value,
+        qbit_category: document.getElementById("qbit_category").value,
+        qbit_tag: document.getElementById("qbit_tag").value,
+        qbit_save_path: document.getElementById("qbit_save_path").value,
+        manual_movies_save_path: document.getElementById("manual_movies_save_path").value,
+        manual_series_save_path: document.getElementById("manual_series_save_path").value,
+        host_disk_check_path: document.getElementById("host_disk_check_path").value,
+        managed_disk_cap_gb: numberOrNull("managed_disk_cap_gb"),
+        manual_disk_cap_gb: numberOrNull("manual_disk_cap_gb"),
+        disk_reserve_gb: numberOrNull("disk_reserve_gb"),
+        admission_high_water_mark_gb: numberOrNull("admission_high_water_mark_gb"),
+        manual_admission_high_water_mark_gb: numberOrNull("manual_admission_high_water_mark_gb"),
+        manual_debt_budget: numberOrNull("manual_debt_budget"),
+        manual_soft_unresolved_cap: numberOrNull("manual_soft_unresolved_cap"),
+        manual_hard_unresolved_cap: numberOrNull("manual_hard_unresolved_cap"),
+        minimum_free_host_disk_gb: numberOrNull("minimum_free_host_disk_gb"),
+        rss_enabled: toBool(document.getElementById("rss_enabled").value),
+        rss_limit: numberOrNull("rss_limit"),
+        rss_assume_preferred: toBool(document.getElementById("rss_assume_preferred").value),
+        rss_parse_description: toBool(document.getElementById("rss_parse_description").value),
+        rss_compute_info_hash: toBool(document.getElementById("rss_compute_info_hash").value),
+        autobrr_enabled: toBool(document.getElementById("autobrr_enabled").value),
+        autobrr_base_url: document.getElementById("autobrr_base_url").value,
+        radarr_enabled: toBool(document.getElementById("radarr_enabled").value),
+        radarr_base_url: document.getElementById("radarr_base_url").value,
+        radarr_root_folder_path: document.getElementById("radarr_root_folder_path").value,
+        radarr_quality_profile_id: numberOrNull("radarr_quality_profile_id"),
+        sonarr_enabled: toBool(document.getElementById("sonarr_enabled").value),
+        sonarr_base_url: document.getElementById("sonarr_base_url").value,
+        sonarr_root_folder_path: document.getElementById("sonarr_root_folder_path").value,
+        sonarr_quality_profile_id: numberOrNull("sonarr_quality_profile_id"),
+        sonarr_language_profile_id: numberOrNull("sonarr_language_profile_id"),
+        prowlarr_enabled: toBool(document.getElementById("prowlarr_enabled").value),
+        prowlarr_base_url: document.getElementById("prowlarr_base_url").value,
+        prowlarr_manual_indexer_ids: document.getElementById("prowlarr_manual_indexer_ids").value,
+        plex_enabled: toBool(document.getElementById("plex_enabled").value),
+        plex_base_url: document.getElementById("plex_base_url").value,
+        plex_movies_section_id: numberOrNull("plex_movies_section_id"),
+        plex_series_section_id: numberOrNull("plex_series_section_id"),
+        plex_handoff_enabled: toBool(document.getElementById("plex_handoff_enabled").value),
+        plex_handoff_interval_seconds: numberOrNull("plex_handoff_interval_seconds"),
+        dry_run: toBool(document.getElementById("dry_run").value),
+        dashboard_username: document.getElementById("dashboard_username").value,
+        manual_requests_allow_arr_add: toBool(document.getElementById("manual_requests_allow_arr_add").value),
+        manual_requests_require_existing_arr_item: toBool(document.getElementById("manual_requests_require_existing_arr_item").value),
+        manual_requests_arr_timeout_minutes: numberOrNull("manual_requests_arr_timeout_minutes"),
+        manual_request_candidate_limit: numberOrNull("manual_request_candidate_limit"),
+        manual_request_preferred_resolutions: document.getElementById("manual_request_preferred_resolutions").value,
+        manual_request_preferred_languages: document.getElementById("manual_request_preferred_languages").value,
+        manual_request_banned_terms: document.getElementById("manual_request_banned_terms").value,
+        poll_interval_seconds: numberOrNull("poll_interval_seconds"),
+        reconcile_interval_seconds: numberOrNull("reconcile_interval_seconds"),
+        rss_poll_interval_minutes: numberOrNull("rss_poll_interval_minutes"),
+        wanted_score_boost: numberOrNull("wanted_score_boost")
+      };
+      ["qbit_password","rss_url","autobrr_api_key","autobrr_shared_secret","radarr_api_key","sonarr_api_key","prowlarr_api_key","plex_token","dashboard_password","agent_api_token"].forEach((field) => {
+        const element = document.getElementById(field);
+        if (element && element.value) payload[field] = element.value;
+      });
+      return payload;
+    }
+
+    async function saveSettings() {
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(getPayload())
+      });
+      const data = await response.json();
+      setConsole("settings-result", "PUT /api/settings", data);
+      if (response.ok) window.setTimeout(() => window.location.reload(), 400);
+    }
+
+    async function runTest(path) {
+      const response = await fetch(path, {method: "POST"});
+      const data = await response.json();
+      setConsole("test-results", path, data);
+    }
+
+    async function postAction(path, useAgent = false) {
+      const headers = useAgent ? getAgentHeaders() : {};
+      const response = await fetch(path, {method: "POST", headers});
+      const data = await response.json();
+      setConsole("test-results", path, data);
+      if (response.ok) window.setTimeout(refreshDashboard, 250);
+    }
+
+    function listFromCsv(value) {
+      return value.split(",").map((item) => item.trim()).filter(Boolean);
+    }
+
+    function boolOrNull(value) {
+      if (value === "") return null;
+      return value === "true";
+    }
+
+    function getWorkbenchPayload() {
+      return {
+        media_type: document.getElementById("workbench_media_type").value,
+        title: document.getElementById("workbench_title").value,
+        year: numberOrNull("workbench_year"),
+        season: numberOrNull("workbench_season"),
+        episode: numberOrNull("workbench_episode"),
+        quality_hint: document.getElementById("workbench_quality").value || null,
+        language_hint: document.getElementById("workbench_language").value || null,
+        preferred_resolutions: listFromCsv(document.getElementById("workbench_preferred_resolutions").value),
+        preferred_languages: listFromCsv(document.getElementById("workbench_preferred_languages").value),
+        candidate_limit: numberOrNull("workbench_candidate_limit") || 5,
+        exact_match_required: boolOrNull(document.getElementById("workbench_exact_match").value),
+        add_to_plex: toBool(document.getElementById("workbench_add_to_plex").value),
+        preferred_preferred: true
+      };
+    }
+
+    function renderCandidates(candidates) {
+      const container = document.getElementById("candidate-preview");
+      if (!candidates || candidates.length === 0) {
+        container.className = "empty";
+        container.textContent = "No candidates matched the current request.";
+        return;
+      }
+      container.className = "table-shell";
+      const rows = candidates.map((candidate) => `
+        <tr>
+          <td><div class="entity"><strong>${escapeHtml(candidate.title)}</strong><span>${escapeHtml((candidate.rationale || []).join(", "))}</span></div></td>
+          <td>${escapeHtml(candidate.indexer || "")}</td>
+          <td>${escapeHtml(candidate.resolution || "")}</td>
+          <td>${candidate.seeders ?? ""}/${candidate.leechers ?? ""}</td>
+          <td>${formatGb(candidate.size_bytes)}</td>
+          <td>${candidate.ranking_score}</td>
+          <td>${candidate.preferred ? '<span class="status-pill ok">preferred</span>' : '<span class="status-pill warn">metered</span>'}</td>
+        </tr>
+      `).join("");
+      container.innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Candidate</th><th>Indexer</th><th>Res</th><th>Swarm</th><th>Size</th><th>Score</th><th>Charge</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    async function previewRequest() {
+      const response = await fetch("/api/manual/workbench/preview", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(getWorkbenchPayload())
+      });
+      const data = await response.json();
+      setConsole("settings-result", "POST /api/manual/workbench/preview", data);
+      renderCandidates(data.candidates || []);
+    }
+
+    async function fulfillRequest() {
+      const response = await fetch("/api/manual/workbench/fulfill", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(getWorkbenchPayload())
+      });
+      const data = await response.json();
+      setConsole("settings-result", "POST /api/manual/workbench/fulfill", data);
+      renderCandidates(data.selected_candidate ? [data.selected_candidate] : []);
+      if (response.ok) window.setTimeout(refreshDashboard, 350);
+    }
+
+    async function refreshStatusAndCore() {
+      const [statusData, decisions, torrents, buckets] = await Promise.all([
+        fetchJson("/api/status"),
+        fetchJson("/api/decisions"),
+        fetchJson("/api/torrents"),
+        fetchJson("/api/buckets")
+      ]);
+      updateStatusView(statusData);
+      renderDecisionRows(decisions);
+      renderDecisionChart(decisions);
+      renderTorrents(torrents, "torrents-body", "torrents-table", false);
+      renderTorrents(torrents, "fleet-body", "fleet-table", true);
+      renderBuckets(buckets);
+    }
+
+    async function refreshManualWorkspace() {
+      const headers = getAgentHeaders();
+      const [requests, handoffs, tvPriorities] = await Promise.all([
+        fetchJson("/api/agent/manual-requests", {headers}),
+        fetchJson("/api/agent/library-handoffs", {headers}),
+        fetchJson("/api/agent/tv-priorities", {headers})
+      ]);
+      renderManualRequests(requests);
+      renderHandoffs(handoffs);
+      renderTvPriorities(tvPriorities);
+    }
+
+    async function refreshDashboard() {
+      try {
+        await refreshStatusAndCore();
+        try {
+          await refreshManualWorkspace();
+          setLiveRefreshChip(`Live ${new Date().toLocaleTimeString()}`, "live-chip");
+        } catch (agentError) {
+          setLiveRefreshChip(`Core live · agent locked`, "status-pill warn");
+        }
+      } catch (error) {
+        setLiveRefreshChip(`Refresh stalled`, "status-pill danger");
+      }
+      applyGlobalFilter();
+    }
+
+    function startAutoRefresh() {
+      refreshDashboard();
+      window.setInterval(refreshDashboard, 20000);
+    }
+
+    applyStoredDensity();
+    applyStoredView();
+    window.addEventListener("hashchange", syncHashWithView);
+    startAutoRefresh();
+  </script>
+</body>
+</html>
