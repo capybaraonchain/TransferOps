@@ -26,7 +26,6 @@
   ·
   <a href="#api-surface">API</a>
   ·
-  <a href="#portfolio-notes">Portfolio Notes</a>
 </p>
 
 ---
@@ -211,20 +210,6 @@ uv run ruff check .
 ```
 
 The test suite uses fake executor and integration clients so core policy behavior can be validated without external services.
-
-## Portfolio Notes
-
-TransferOps demonstrates:
-
-- production-style FastAPI route organization
-- typed settings and secret masking
-- SQLAlchemy models and migrations-on-startup compatibility handling
-- scheduler jobs for reconciliation and learning
-- dense operational UI design without a frontend framework
-- agent-tool bridge design for controlled local automation
-- practical test coverage across policy, API, lifecycle, and integration boundaries
-
-This public snapshot is designed as a portfolio-safe showcase of the architecture and product thinking behind a real local operations tool. The default configuration and examples use generic providers and dry-run behavior.
 
 ## License
 

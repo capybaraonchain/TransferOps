@@ -599,6 +599,48 @@ def test_sync_removes_safe_missing_torrent_from_managed_scope(db_session, contro
     assert torrent.state == TorrentState.retirable.value
 
 
+def test_prune_retirable_deletes_payload_files_for_safe_transfers(db_session, controller):
+    safe = Torrent(
+        title="Safe Retirable",
+        info_hash="safe-retirable",
+        state=TorrentState.retirable.value,
+        size_bytes=10,
+        progress=1.0,
+        ratio=1.2,
+        seed_time_seconds=400 * 3600,
+        managed=True,
+        executor_state=ExecutorState.confirmed.value,
+        safely_seeded_at=datetime.now(UTC).replace(tzinfo=None) - timedelta(days=3),
+    )
+    unsafe = Torrent(
+        title="Unsafe Retirable",
+        info_hash="unsafe-retirable",
+        state=TorrentState.retirable.value,
+        size_bytes=10,
+        progress=1.0,
+        ratio=0.2,
+        seed_time_seconds=10 * 3600,
+        managed=True,
+        executor_state=ExecutorState.confirmed.value,
+    )
+    db_session.add_all([safe, unsafe])
+    db_session.commit()
+
+    result = LifecycleReconciler(controller.settings).prune_retirable(
+        db_session,
+        controller.qb,
+        delete_files=True,
+    )
+    db_session.commit()
+    db_session.refresh(safe)
+    db_session.refresh(unsafe)
+
+    assert result == {"removed": 1, "skipped": 1, "delete_files": True}
+    assert controller.qb.deleted == [("safe-retirable", True)]
+    assert safe.managed is False
+    assert unsafe.managed is True
+
+
 def test_rss_parser_handles_ipt_description_strings():
     size_bytes, category = parse_description("1.12 GB; Movie/HD/Bluray")
     assert size_bytes == int(1.12 * BYTES_PER_GB)

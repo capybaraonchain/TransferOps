@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.models import Alert, ControllerEvent, ExecutorState, Torrent, TorrentState
+from app.services.qbittorrent import QBittorrentClient
 
 TAG_BY_STATE = {
     TorrentState.hot.value: "transferops.hot",
@@ -114,3 +115,46 @@ class LifecycleReconciler:
             "anchors": len(anchors),
             "safe": len(safe_candidates),
         }
+
+    def prune_retirable(
+        self,
+        db: Session,
+        qb: QBittorrentClient,
+        delete_files: bool = True,
+    ) -> dict[str, int | bool]:
+        rows = (
+            db.query(Torrent)
+            .filter(
+                Torrent.managed.is_(True),
+                Torrent.state == TorrentState.retirable.value,
+                or_(
+                    Torrent.executor_state == ExecutorState.confirmed.value,
+                    Torrent.executor_state.is_(None),
+                ),
+            )
+            .all()
+        )
+        removed = 0
+        skipped = 0
+        for torrent in rows:
+            if not torrent.info_hash:
+                skipped += 1
+                continue
+            if not self.is_safe(torrent):
+                skipped += 1
+                continue
+            qb.delete_torrents(torrent.info_hash, delete_files=delete_files)
+            torrent.managed = False
+            torrent.executor_state = ExecutorState.orphaned.value
+            torrent.retirable_at = torrent.retirable_at or datetime.now(UTC).replace(tzinfo=None)
+            db.add(torrent)
+            removed += 1
+        db.add(
+            ControllerEvent(
+                event_type="retirable_prune",
+                severity="info",
+                message="Retirable transfer prune completed",
+                payload={"removed": removed, "skipped": skipped, "delete_files": delete_files},
+            )
+        )
+        return {"removed": removed, "skipped": skipped, "delete_files": delete_files}

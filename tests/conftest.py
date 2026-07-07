@@ -19,6 +19,7 @@ class StubQB:
         self.add_error: Exception | None = None
         self.tag_updates: list[tuple[str, list[str]]] = []
         self.category_updates: list[tuple[str, str]] = []
+        self.deleted: list[tuple[str, bool]] = []
 
     def add_torrent(self, candidate: dict) -> dict:
         if self.add_error is not None:
@@ -34,6 +35,9 @@ class StubQB:
 
     def set_category(self, hashes: str, category: str) -> None:
         self.category_updates.append((hashes, category))
+
+    def delete_torrents(self, hashes: str, delete_files: bool = True) -> None:
+        self.deleted.append((hashes, delete_files))
 
 
 @pytest.fixture()

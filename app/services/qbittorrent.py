@@ -105,6 +105,13 @@ class QBittorrentClient:
             data={"hashes": hashes, "tags": ",".join(tags)},
         )
 
+    def delete_torrents(self, hashes: str, delete_files: bool = True) -> None:
+        self._request(
+            "POST",
+            "/api/v2/torrents/delete",
+            data={"hashes": hashes, "deleteFiles": "true" if delete_files else "false"},
+        )
+
     def pause(self, hashes: str) -> None:
         self._request("POST", "/api/v2/torrents/pause", data={"hashes": hashes})
 

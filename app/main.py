@@ -1237,6 +1237,36 @@ def agent_reconcile(
     return result
 
 
+@app.post("/api/agent/actions/prune-retirable")
+def agent_prune_retirable(
+    request: Request,
+    actor: Annotated[str, Depends(agent_auth)],
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    settings = resolve_settings(db)
+    delete_files = str(request.query_params.get("delete_files", "true")).lower() not in {
+        "0",
+        "false",
+        "no",
+    }
+    reconciler = LifecycleReconciler(settings)
+    result = reconciler.prune_retirable(
+        db,
+        qb=QBittorrentClient(settings),
+        delete_files=delete_files,
+    )
+    ControllerService(settings, qb=QBittorrentClient(settings)).record_snapshot(db)
+    db.add(
+        ControllerEvent(
+            event_type="agent_action",
+            message="Agent pruned retirable transfers",
+            payload={"actor": actor, "action": "prune_retirable", "result": result},
+        )
+    )
+    db.commit()
+    return result
+
+
 @app.post("/api/agent/actions/refresh-wanted")
 def agent_refresh_wanted(
     actor: Annotated[str, Depends(agent_auth)],

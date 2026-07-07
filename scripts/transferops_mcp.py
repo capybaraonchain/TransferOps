@@ -135,6 +135,12 @@ def transferops_run_reconcile() -> dict[str, Any]:
 
 
 @mcp.tool()
+def transferops_prune_retirable(delete_files: bool = True) -> dict[str, Any]:
+    suffix = "?delete_files=false" if not delete_files else ""
+    return _post(f"/api/agent/actions/prune-retirable{suffix}")
+
+
+@mcp.tool()
 def transferops_refresh_wanted() -> dict[str, Any]:
     return _post("/api/agent/actions/refresh-wanted")
 
