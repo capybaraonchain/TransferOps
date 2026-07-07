@@ -20,6 +20,8 @@
 <p align="center">
   <a href="#features">Features</a>
   ·
+  <a href="#screenshots">Screenshots</a>
+  ·
   <a href="#architecture">Architecture</a>
   ·
   <a href="#quick-start">Quick Start</a>
@@ -43,6 +45,28 @@ It is intentionally boring where infrastructure should be boring:
 - auditable admission decisions
 - separate automatic and manual lanes
 - agent API and MCP bridge for tool-assisted operations
+
+## Screenshots
+
+<p align="center">
+  <img src="assets/screenshots/01-overview.png" alt="TransferOps overview dashboard with budget meters and decision audit" width="100%">
+</p>
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="assets/screenshots/03-managed-transfers.png" alt="Managed transfers table with lifecycle state, score, tags, and save paths">
+    </td>
+    <td width="50%">
+      <img src="assets/screenshots/04-signals.png" alt="Wanted signals and learning buckets dashboard">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <img src="assets/screenshots/05-settings.png" alt="Runtime settings screen with executor, storage, and policy controls">
+    </td>
+  </tr>
+</table>
 
 ## Features
 
