@@ -233,7 +233,7 @@
     }
 
     .global-search::before {
-      content: "âŒ•";
+      content: "";
       position: absolute;
       left: 16px;
       top: 50%;
@@ -997,23 +997,23 @@
 
       <nav class="nav">
         <button class="nav-item active" type="button" data-view-target="overview" onclick="setView('overview')">
-          <span class="nav-icon">â—«</span>
+          <span class="nav-icon">O</span>
           <span class="nav-label">Overview</span>
         </button>
         <button class="nav-item" type="button" data-view-target="manual" onclick="setView('manual')">
-          <span class="nav-icon">âŒ</span>
+          <span class="nav-icon">M</span>
           <span class="nav-label">Manual Desk</span>
         </button>
         <button class="nav-item" type="button" data-view-target="fleet" onclick="setView('fleet')">
-          <span class="nav-icon">â‡†</span>
+          <span class="nav-icon">F</span>
           <span class="nav-label">Fleet</span>
         </button>
         <button class="nav-item" type="button" data-view-target="intelligence" onclick="setView('intelligence')">
-          <span class="nav-icon">â—Œ</span>
+          <span class="nav-icon">S</span>
           <span class="nav-label">Signals</span>
         </button>
         <button class="nav-item" type="button" data-view-target="settings" onclick="setView('settings')">
-          <span class="nav-icon">âš™</span>
+          <span class="nav-icon">C</span>
           <span class="nav-label">Settings</span>
         </button>
       </nav>
@@ -1137,7 +1137,7 @@
                   <div class="subpanel">
                     <div class="subpanel-title">Managed Scope</div>
                     <div class="kv-list">
-                      <div class="kv-row"><span>qB save path</span><code id="managed-save-path">{{ settings.qbit_save_path }}</code></div>
+                      <div class="kv-row"><span>executor save path</span><code id="managed-save-path">{{ settings.qbit_save_path }}</code></div>
                       <div class="kv-row"><span>host disk path</span><code id="managed-host-path">{{ settings.host_disk_check_path }}</code></div>
                       <div class="kv-row"><span>managed category</span><strong id="managed-category">{{ settings.qbit_category }}</strong></div>
                       <div class="kv-row"><span>managed tag</span><strong id="managed-tag">{{ settings.qbit_tag }}</strong></div>
@@ -1250,7 +1250,7 @@
               <div class="panel-head">
                 <div>
                   <h2>Managed Transfers Snapshot</h2>
-                  <p>Your qB-managed scope, kept compact but still fully inspectable.</p>
+                  <p>Your managed transfer scope, kept compact but still fully inspectable.</p>
                 </div>
               </div>
               <div class="table-toolbar">
@@ -1266,7 +1266,7 @@
                       <tr>
                         <th>Transfer</th>
                         <th>State</th>
-                        <th>Uploaded</th>
+                        <th>Processed</th>
                         <th>Ratio</th>
                         <th>Path</th>
                       </tr>
@@ -1302,13 +1302,13 @@
                 </div>
 
                 <div class="workbench-grid">
-                  <label><span>Media Type</span><select id="workbench_media_type"><option value="movie">movie</option><option value="series">series</option><option value="episode" selected>episode</option></select></label>
-                  <label><span>Title</span><input id="workbench_title" placeholder="Rick and Morty"></label>
+                  <label><span>Request Type</span><select id="workbench_media_type"><option value="movie">asset</option><option value="series">collection</option><option value="episode" selected>unit</option></select></label>
+                  <label><span>Title</span><input id="workbench_title" placeholder="Priority work package"></label>
                   <label><span>Year</span><input id="workbench_year" type="number" placeholder="optional"></label>
                   <label><span>Season</span><input id="workbench_season" type="number" placeholder="4"></label>
-                  <label><span>Episode</span><input id="workbench_episode" type="number" placeholder="6"></label>
-                  <label><span>Quality Hint</span><input id="workbench_quality" placeholder="2160p or 1080p"></label>
-                  <label><span>Language Hint</span><input id="workbench_language" placeholder="english"></label>
+                  <label><span>Unit</span><input id="workbench_episode" type="number" placeholder="6"></label>
+                  <label><span>Priority Hint</span><input id="workbench_quality" placeholder="high or standard"></label>
+                  <label><span>Locale Hint</span><input id="workbench_language" placeholder="en"></label>
                   <label><span>Preferred Resolutions</span><input id="workbench_preferred_resolutions" value="{{ settings.manual_request_preferred_resolutions }}"></label>
                   <label><span>Preferred Languages</span><input id="workbench_preferred_languages" value="{{ settings.manual_request_preferred_languages }}"></label>
                   <label><span>Candidate Limit</span><input id="workbench_candidate_limit" type="number" value="{{ settings.manual_request_candidate_limit }}"></label>
@@ -1449,9 +1449,9 @@
               <div class="panel-head">
                 <div>
                   <h2>Managed Transfers</h2>
-                  <p>The full qB-managed scope with filterable rows and live refresh.</p>
+                  <p>The full managed scope with filterable rows and live refresh.</p>
                 </div>
-                <span class="status-pill cool">qB-backed</span>
+                <span class="status-pill cool">executor-backed</span>
               </div>
               <div class="table-toolbar">
                 <div class="left">
@@ -1466,9 +1466,9 @@
                       <tr>
                         <th>Transfer</th>
                         <th>State</th>
-                        <th>Uploaded</th>
-                        <th>Ratio</th>
-                        <th>Seed Time</th>
+                        <th>Processed</th>
+                        <th>Score</th>
+                        <th>Retention Time</th>
                         <th>Safe Estimate</th>
                         <th>Tags</th>
                         <th>Save Path</th>
@@ -1502,7 +1502,7 @@
                 <div class="panel-head">
                   <div>
                     <h2>Wanted Signals</h2>
-                    <p>Catalog overlays that influence scoring without owning your seeding workflow.</p>
+                    <p>Catalog overlays that influence scoring without owning the transfer workflow.</p>
                   </div>
                   <span class="status-pill cool">{{ wanted_items|length }} visible</span>
                 </div>
@@ -1601,14 +1601,14 @@
                   <summary><span>Executor and Storage</span><span class="summary-caption">scope, save paths, disk caps</span></summary>
                   <div class="settings-body">
                     <div class="settings-grid">
-                      <label><span>qB Base URL <small>WebUI endpoint</small></span><input id="qbit_base_url" value="{{ settings.qbit_base_url }}"></label>
-                      <label><span>qB Username <small>stored in DB override if changed</small></span><input id="qbit_username" value="{{ settings.qbit_username }}"></label>
-                      <label><span>qB Password <small>leave blank to keep current</small></span><input id="qbit_password" type="password" placeholder="stored locally; leave blank to keep"></label>
+                      <label><span>Executor Base URL <small>WebUI endpoint</small></span><input id="qbit_base_url" value="{{ settings.qbit_base_url }}"></label>
+                      <label><span>Executor Username <small>stored in DB override if changed</small></span><input id="qbit_username" value="{{ settings.qbit_username }}"></label>
+                      <label><span>Executor Password <small>leave blank to keep current</small></span><input id="qbit_password" type="password" placeholder="stored locally; leave blank to keep"></label>
                       <label><span>Managed Category <small>used on add and sync scope</small></span><input id="qbit_category" value="{{ settings.qbit_category }}"></label>
                       <label><span>Managed Tag <small>used on add and sync scope</small></span><input id="qbit_tag" value="{{ settings.qbit_tag }}"></label>
-                      <label><span>qB Save Path <small>Windows path seen by qB</small></span><input id="qbit_save_path" value="{{ settings.qbit_save_path }}"></label>
-                      <label><span>Manual Movies Path <small>target path for movie manual requests</small></span><input id="manual_movies_save_path" value="{{ settings.manual_movies_save_path }}"></label>
-                      <label><span>Manual Series Path <small>target path for series and episode manual requests</small></span><input id="manual_series_save_path" value="{{ settings.manual_series_save_path }}"></label>
+                      <label><span>Executor Save Path <small>Windows path seen by the executor</small></span><input id="qbit_save_path" value="{{ settings.qbit_save_path }}"></label>
+                      <label><span>Manual Asset Path <small>target path for asset requests</small></span><input id="manual_movies_save_path" value="{{ settings.manual_movies_save_path }}"></label>
+                      <label><span>Manual Collection Path <small>target path for collection and unit requests</small></span><input id="manual_series_save_path" value="{{ settings.manual_series_save_path }}"></label>
                       <label><span>Host Disk Path <small>WSL or local path used for free-space checks</small></span><input id="host_disk_check_path" value="{{ settings.host_disk_check_path }}"></label>
                       <label><span>Managed Disk Cap GB <small>hard controller cap</small></span><input id="managed_disk_cap_gb" type="number" step="0.1" value="{{ settings.managed_disk_cap_gb }}"></label>
                       <label><span>Manual Disk Cap GB <small>separate cap for manual requests</small></span><input id="manual_disk_cap_gb" type="number" step="0.1" value="{{ settings.manual_disk_cap_gb }}"></label>
@@ -1724,7 +1724,7 @@
               </div>
             </div>
             <div class="sticky-actions">
-              <button class="action-button" type="button" onclick="runTest('/api/settings/test-qb')">Test qB</button>
+              <button class="action-button" type="button" onclick="runTest('/api/settings/test-qb')">Test executor</button>
               <button class="action-button" type="button" onclick="runTest('/api/settings/test-rss')">Test RSS</button>
               <button class="action-button" type="button" onclick="runTest('/api/settings/test-autobrr')">Test autobrr</button>
               <button class="action-button" type="button" onclick="runTest('/api/settings/test-radarr')">Test Catalog A</button>
