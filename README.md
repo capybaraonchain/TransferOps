@@ -20,8 +20,6 @@
 <p align="center">
   <a href="#features">Features</a>
   ·
-  <a href="#screenshots">Screenshots</a>
-  ·
   <a href="#architecture">Architecture</a>
   ·
   <a href="#quick-start">Quick Start</a>
@@ -37,6 +35,10 @@
 
 TransferOps is a finished local-first FastAPI application for running a small operations desk around queued transfers. It evaluates incoming candidates, enforces disk and retention policies, records every decision, and gives operators a dense authenticated dashboard for daily review.
 
+<p align="center">
+  <img src="assets/screenshots/01-overview.png" alt="TransferOps overview dashboard with budget meters and decision audit" width="100%">
+</p>
+
 It is intentionally boring where infrastructure should be boring:
 
 - local SQLite persistence by default
@@ -45,28 +47,6 @@ It is intentionally boring where infrastructure should be boring:
 - auditable admission decisions
 - separate automatic and manual lanes
 - agent API and MCP bridge for tool-assisted operations
-
-## Screenshots
-
-<p align="center">
-  <img src="assets/screenshots/01-overview.png" alt="TransferOps overview dashboard with budget meters and decision audit" width="100%">
-</p>
-
-<table>
-  <tr>
-    <td width="50%">
-      <img src="assets/screenshots/03-managed-transfers.png" alt="Managed transfers table with lifecycle state, score, tags, and save paths">
-    </td>
-    <td width="50%">
-      <img src="assets/screenshots/04-signals.png" alt="Wanted signals and learning buckets dashboard">
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2">
-      <img src="assets/screenshots/05-settings.png" alt="Runtime settings screen with executor, storage, and policy controls">
-    </td>
-  </tr>
-</table>
 
 ## Features
 
@@ -102,6 +82,18 @@ It is intentionally boring where infrastructure should be boring:
     </td>
   </tr>
 </table>
+
+The operational view stays table-first on purpose: it is built for scanning state, score, retention posture, tags, and paths without opening a separate admin tool.
+
+<p align="center">
+  <img src="assets/screenshots/03-managed-transfers.png" alt="Managed transfers table with lifecycle state, score, tags, and save paths" width="100%">
+</p>
+
+Signals and learning buckets are visible alongside the main workflow, so the system's scoring behavior can be inspected instead of treated as a black box.
+
+<p align="center">
+  <img src="assets/screenshots/04-signals.png" alt="Wanted signals and learning buckets dashboard" width="100%">
+</p>
 
 ## Architecture
 
@@ -168,6 +160,10 @@ The app starts in `dry_run` mode by default, so it is safe to inspect without co
 ## Configuration
 
 Most settings can be changed from the dashboard and are persisted as runtime overrides. Secrets are masked in API responses and can be rotated without rewriting source files.
+
+<p align="center">
+  <img src="assets/screenshots/05-settings.png" alt="Runtime settings screen with executor, storage, and policy controls" width="100%">
+</p>
 
 Common `.env` values:
 
